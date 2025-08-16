@@ -42,9 +42,8 @@ export default defineNuxtConfig({
 
   routeRules: {
     // Pages are prerendered to static HTML
-    '/': { prerender: true },
-    '/loading': { prerender: true },
-    '/home': { prerender: true },
+    '/': { ssr: false },
+    '/home': { ssr: false }, // 👈 add this
 
     // If any page must be client-only (avoids SSR hydration), you can keep ssr:false:
     // '/': { ssr: false, prerender: true },
