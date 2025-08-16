@@ -163,6 +163,11 @@ function checkCompletion() {
   if (reachedEnd.value && returnedToStart.value && !tutorialComplete.value) {
     tutorialComplete.value = true
     localStorage.setItem(LOCAL_KEY, '1')
+
+    // 🔓 Immediately notify the parent that this tutorial is complete
+    if (typeof props.onComplete === 'function') {
+      props.onComplete()
+    }
   }
 }
 
