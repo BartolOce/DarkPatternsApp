@@ -1,12 +1,5 @@
 <!-- file: pages/home.vue -->
 <script setup lang="ts">
-/* UX:
-   - First step disabled for 2s so intro chat can start.
-   - Header button uses a confirm-on-second-click interaction.
-   - On confirm, we mark all steps complete, reveal link, and flush a finished chat (summary + per-pattern notes).
-   - No persistence: reload restarts tutorial.
-*/
-
 import { ref, computed, onMounted, nextTick, onBeforeUnmount, reactive, watch } from 'vue'
 import type { Component } from 'vue'
 
@@ -23,7 +16,6 @@ import VisualInterfaceTutorial from '~/components/tutorials/VisualInterfaceTutor
 
 definePageMeta({ title: 'Home – Dark Patterns IO' })
 
-/* --- Component map (typed) --- */
 const _tutorialComponentKeys = [
   'ComparisonPreventionTutorial','ConfirmshamingTutorial','FakeScarcityTutorial','FakeUrgencyTutorial',
   'HiddenCostsTutorial','NaggingTutorial','ObstructionTutorial','PreselectionTutorial','TrickWordingTutorial','VisualInterfaceTutorial',
@@ -34,7 +26,6 @@ const tutorialComponents: Record<TutorialComponentKey, Component> = {
   HiddenCostsTutorial, NaggingTutorial, ObstructionTutorial, PreselectionTutorial, TrickWordingTutorial, VisualInterfaceTutorial,
 }
 
-/* --- Static data --- */
 const patterns: Array<{ id:string; label:string; component:TutorialComponentKey; message:string; action:string }> = [
   { id:'comparisonprevention', label:'Comparison prevention', component:'ComparisonPreventionTutorial', message:'The carousel made comparing plans hard – especially since plan UltraStream hid taxes. Always check per-unit costs and fine print to avoid false discounts.', action:'Opened the first one, let’s go.' },
   { id:'confirmshaming', label:'Confirmshaming', component:'ConfirmshamingTutorial', message:'Here, declining a newsletter shows "OK, I’ll pay more" – framing "no" as foolish. Remember: ethical design never punishes refusal!', action:'Alright, #2 is checked off.' },
@@ -48,26 +39,23 @@ const patterns: Array<{ id:string; label:string; component:TutorialComponentKey;
   { id:'visualinterface', label:'Visual interface', component:'VisualInterfaceTutorial', message:'You’ve just learned how to spot dark patterns and how to stay safer online by recognizing tricks that websites often use. Before you go, we’d love your help. A new button has been unlocked below — filling out the short form will support our research and make this project even better. Your experience matters, and together we can help make the web a fairer place.', action:'All ten finished — that’s the lot.' },
 ]
 
-/* --- Tutorial progress & modal --- */
+/* Progress & modal */
 const completed = ref<boolean[]>(Array(patterns.length).fill(false))
 const activeModal = ref<string|null>(null)
 const afterCloseMessages = ref<{side:'start'|'end',text:string}[]>([])
 const openedPatterns = ref<Set<string>>(new Set())
 const completionAnnounced = ref<Set<string>>(new Set())
 
-/* --- Share link reveal --- */
+/* Share link reveal */
 const showLinkHolder = ref<boolean>(false)
 const linkAnimating = ref<boolean>(false)
 function unlockLinkHolder() {
   showLinkHolder.value = true
-  // small pop animation
   linkAnimating.value = false
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => { linkAnimating.value = true })
-  })
+  requestAnimationFrame(() => { requestAnimationFrame(() => { linkAnimating.value = true }) })
 }
 
-/* --- Chat state --- */
+/* Chat state */
 type Msg = { id:number; side:'start'|'end'; text?:string; typed?:string; typingIndicator?:boolean; pendingText?:string; duration?:number }
 const chatMessages = ref<Msg[]>([])
 const chatBoxRef = ref<HTMLDivElement|null>(null)
@@ -120,7 +108,7 @@ function enqueueTypingThenMessage(side:'start'|'end', text:string, typingMs=800)
 }
 function pushGuide(t:string){ enqueueMessage('start', t) }
 
-/* --- Step helper text --- */
+/* Helper copy */
 function explainFor(id:string){
   const map:Record<string,string>={
     comparisonprevention:'The carousel made comparing plans hard – especially since Plan C hid taxes. Always check per-unit costs and fine print to avoid false discounts.',
@@ -137,31 +125,86 @@ function explainFor(id:string){
   return map[id] || 'Short guidance for this step.'
 }
 
-/* --- Initial 2s lock before first step is openable --- */
+/* Initial lock + intro */
 const initialDelayDone = ref(false)
+const introLines = [
+  'Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?',
+  'Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!',
+  'Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!',
+  'This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.'
+]
 
-/* --- Initial chat (wait ~2s before first bubble) --- */
 onMounted(async ()=>{
-  await wait(2000)
+  await wait(2000)              // 2s gate before step 1 can be opened
   initialDelayDone.value = true
-  enqueueTypingThenMessage('start','Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?', 900)
-  enqueueTypingThenMessage('start','Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!', 900)
-  enqueueTypingThenMessage('start','Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!', 900)
-  pushGuide('This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.')
+  enqueueTypingThenMessage('start', introLines[0], 900)
+  enqueueTypingThenMessage('start', introLines[1], 900)
+  enqueueTypingThenMessage('start', introLines[2], 900)
+  pushGuide(introLines[3])
 })
 
-/* --- Modal control --- */
+/* Build full transcript (used after Finish Now) */
+function buildFinishedTranscript(): Msg[] {
+  const out: Msg[] = []
+  let idCounter = 0
+  for (const line of introLines) out.push({ id: idCounter++, side: 'start', text: line, typed: line })
+  patterns.forEach((p, i) => {
+    out.push({ id: idCounter++, side: 'end',   text: p.action,  typed: p.action })
+    out.push({ id: idCounter++, side: 'start', text: p.message, typed: p.message })
+    const next = patterns[i+1]; if (next) {
+      const guide = explainFor(next.id)
+      out.push({ id: idCounter++, side: 'start', text: guide, typed: guide })
+    }
+  })
+  return out
+}
+
+/* Finish Now (2-click confirm) */
+const wantConfirmFinish = ref(false)
+const finishedByButton = ref(false)
+
+function finishNow() {
+  if (finishedByButton.value) return
+  if (!wantConfirmFinish.value) { wantConfirmFinish.value = true; return }
+  finishNowConfirmed()
+}
+function cancelFinishConfirm() { wantConfirmFinish.value = false }
+function finishNowConfirmed() {
+  wantConfirmFinish.value = false
+  finishedByButton.value = true
+
+  // mark all steps done
+  completed.value = completed.value.map(() => true)
+
+  // stop queues/typing
+  activeIntervals.forEach(clearInterval); activeIntervals.clear()
+  isTyping.value = false
+  messageQueue.length = 0
+
+  // print full transcript without typing
+  chatMessages.value = buildFinishedTranscript()
+
+  // reveal link
+  unlockLinkHolder()
+}
+
+/* Modal control */
 function openModal(id:string){
   const idx = patterns.findIndex(p=>p.id===id)
   if(!canOpen(idx)) return
-  if(!openedPatterns.value.has(id)){
+
+  // if finished by button, allow opening but don't enqueue any chat
+  if(!finishedByButton.value && !openedPatterns.value.has(id)){
     afterCloseMessages.value = [{ side:'end', text:patterns[idx].action }]
     openedPatterns.value.add(id)
   }
-  activeModal.value = null; setTimeout(()=>{ activeModal.value = id }, 0)
+
+  activeModal.value = null
+  setTimeout(()=>{ activeModal.value = id }, 0)
 }
 function closeModal(){ activeModal.value = null }
 function completePattern(id:string){
+  if (finishedByButton.value) return // no more chat after finish
   const idx = patterns.findIndex(p=>p.id===id)
   if(completionAnnounced.value.has(id)) return
   if(!completed.value[idx]) completed.value[idx] = true
@@ -171,6 +214,7 @@ function completePattern(id:string){
   afterCloseMessages.value = msgs; completionAnnounced.value.add(id)
 }
 function flushAfterCloseIfReady(){
+  if (finishedByButton.value) return // suppress enqueues after finish
   if(!activeModal.value && afterCloseMessages.value.length){
     const toFlush = afterCloseMessages.value.slice()
     afterCloseMessages.value = []
@@ -180,47 +224,17 @@ function flushAfterCloseIfReady(){
 watch(activeModal, flushAfterCloseIfReady)
 watch(afterCloseMessages, flushAfterCloseIfReady)
 
-/* --- Progress helpers --- */
+/* Progress helpers */
 const completedCount = computed(()=> completed.value.filter(Boolean).length)
 const allCompleted = computed(()=> completed.value.length>0 && completed.value.every(Boolean))
 function canOpen(index:number){
-  // Index 0 (first step) also requires the initial delay to finish
+  if(finishedByButton.value) return true
   if(index===0) return initialDelayDone.value
   return completed.value.slice(0,index).every(Boolean)
 }
 const activePattern = computed(()=> patterns.filter(p=>p.id===activeModal.value))
 
-/* --- "Finish now" two-click confirm --- */
-const wantConfirmFinish = ref(false)
-
-function finishNow() {
-  if (!wantConfirmFinish.value) {
-    // enter confirm state (animated)
-    wantConfirmFinish.value = true
-    return
-  }
-  // second click confirms
-  finishNowConfirmed()
-}
-function cancelFinishConfirm() {
-  wantConfirmFinish.value = false
-}
-function finishNowConfirmed() {
-  wantConfirmFinish.value = false
-  // mark all as completed
-  completed.value = completed.value.map(() => true)
-  // unlock
-  unlockLinkHolder()
-  // finished chat:
-  enqueueTypingThenMessage('end', 'I marked the tutorial as finished and unlocked the form. You can still open any step for review.', 700)
-  enqueueTypingThenMessage('start', 'Here are the key takeaways from each pattern:', 700)
-  // quickly print each pattern takeaway
-  patterns.forEach((p, i) => {
-    enqueueTypingThenMessage('start', `• ${p.label}: ${p.message}`, Math.max(450 - i*20, 280))
-  })
-}
-
-/* --- Viewport (no template DOM reads) --- */
+/* Viewport */
 const viewportW = ref(0)
 const isLtLg = computed(()=> viewportW.value>0 && viewportW.value<1024)
 const isTooSmall = ref(false)
@@ -235,22 +249,21 @@ onMounted(()=>{
   window.addEventListener('resize', updateViewport, { passive:true })
 })
 
-/* --- Entrance animations trigger --- */
+/* Entrance animations trigger */
 const hasEntered = ref(false)
 onMounted(()=>{ setTimeout(()=>{ hasEntered.value = true }, 20) })
 
-/* --- Cleanup --- */
+/* Cleanup */
 onBeforeUnmount(()=>{
   window.removeEventListener('resize', updateViewport)
   activeIntervals.forEach(clearInterval); activeIntervals.clear()
 })
 
-/* --- Footer year --- */
+/* Footer year */
 const year = new Date().getFullYear()
 </script>
 
 <template>
-  <!-- Root wrapper: adds .entered after mount to kick off CSS keyframes -->
   <div :class="[{ entered: hasEntered }]">
     <!-- Guards -->
     <div v-if="isMobile" class="flex items-center justify-center min-h-screen bg-base-200">
@@ -279,38 +292,36 @@ const year = new Date().getFullYear()
         <div class="max-w-6xl mx-auto h-20 px-4 flex items-center justify-between">
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-base-content">Dark Patterns App</h1>
 
-          <!-- Finish Now + confirm UI -->
+          <!-- Finish Now / Confirm / Finished -->
           <div class="relative flex items-center">
             <button
-              v-if="!wantConfirmFinish"
-              class="btn btn-outline btn-primary gap-2"
-              @click="finishNow"
-              title="Finish tutorial and unlock the form"
+              v-if="finishedByButton"
+              class="btn btn-disabled pointer-events-none"
+              aria-disabled="true"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M5 13l4 4L19 7"/>
-              </svg>
-              Finish now
+              Finished
             </button>
 
-            <!-- Confirmation state -->
-            <div v-else class="flex items-center gap-2">
-              <button
-                class="btn btn-primary gap-2 confirm-grow"
-                @click="finishNow"
-                title="Click again to confirm"
-              >
+            <div v-else-if="wantConfirmFinish" class="flex items-center gap-2">
+              <button class="btn btn-primary gap-2 confirm-grow" title="Click again to confirm" @click="finishNow">
                 Click again to confirm
               </button>
-              <button
-                class="btn btn-ghost"
-                @click="cancelFinishConfirm"
-                title="Cancel"
-              >
+              <button class="btn btn-ghost" title="Cancel" @click="cancelFinishConfirm">
                 Cancel
               </button>
             </div>
+
+            <button
+              v-else
+              class="btn btn-primary gap-2"
+              title="Finish tutorial and unlock the form"
+              @click="finishNow"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Finish now
+            </button>
           </div>
         </div>
       </header>
@@ -319,22 +330,28 @@ const year = new Date().getFullYear()
       <main class="flex-1 min-h-[calc(100vh-5rem)] w-full flex flex-col">
         <div class="w-full max-w-5xl mx-auto px-2 sm:px-4 h-full py-4 sm:py-6 flex flex-col min-h-0">
           <div class="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 items-stretch flex-1 min-h-0">
-            <!-- Steps -->
-            <div class="card w-full bg-base-100 border border-base-300 shadow lg:col-span-1 h-full animate-fade-up" style="--delay:80ms" :class="{ 'min-h-[340px]': isLtLg }">
+            <!-- Steps card (LEFT) -->
+            <div
+              class="card w-full bg-base-100 border border-base-300 shadow lg:col-span-1 h-full"
+              :class="{ 'min-h-[340px]': isLtLg }"
+            >
               <div class="card-body p-2 sm:p-4 h-full overflow-auto">
                 <ul class="steps steps-vertical">
                   <li
                     v-for="(pattern, i) in patterns"
                     :key="pattern.id"
-                    :class="[
-                      'step',
-                      completed[i] ? 'step-primary' : '',
-                      !canOpen(i) ? 'pointer-events-none opacity-40' : 'cursor-pointer'
-                    ]"
-                    :title="!canOpen(i) ? (i===0 ? 'Opens after intro' : 'Complete prior steps first') : 'Open tutorial'"
+                    class="step"
+                    :class="completed[i] ? 'step-primary' : ''"
+                    :title="canOpen(i) ? 'Open tutorial' : (i === 0 ? 'Opens after intro' : 'Complete prior steps first')"
                     @click="canOpen(i) && openModal(pattern.id)"
                   >
-                    <span class="text-lg font-bold text-base-content">
+                    <!-- Circle stays normal, label dims if not clickable -->
+                    <span
+                      :class="[
+                        'text-lg font-bold transition-opacity',
+                        canOpen(i) ? 'opacity-100 cursor-pointer hover:underline' : 'opacity-40 cursor-not-allowed'
+                      ]"
+                    >
                       {{ pattern.label }}
                     </span>
                   </li>
@@ -364,7 +381,6 @@ const year = new Date().getFullYear()
               <!-- Share -->
               <div class="card w-full bg-base-100 border border-base-300 shadow mt-0 animate-fade-up" style="--delay:200ms" :class="{ 'min-h-[120px]': isLtLg }">
                 <div class="card-body p-2 sm:p-6">
-                  <!-- Unlock button -->
                   <button
                     v-if="allCompleted && showLinkHolder !== true"
                     class="btn btn-primary w-full text-center"
@@ -375,7 +391,6 @@ const year = new Date().getFullYear()
                     Form unlocked
                   </button>
 
-                  <!-- Styled, scrollable link -->
                   <div
                     v-else-if="showLinkHolder === true"
                     class="w-full flex items-center justify-center rounded-btn bg-base-300 text-base-content font-semibold text-sm px-3 py-2 overflow-x-auto"
@@ -390,7 +405,6 @@ const year = new Date().getFullYear()
                     </a>
                   </div>
 
-                  <!-- Progress button -->
                   <button
                     v-if="!allCompleted"
                     class="btn btn-primary w-full text-center"
@@ -470,7 +484,7 @@ const year = new Date().getFullYear()
         </footer>
       </section>
 
-      <!-- Active tutorial modal -->
+      <!-- Active tutorial modals -->
       <component
         :is="tutorialComponents[pattern.component]"
         v-for="pattern in activePattern"
@@ -483,39 +497,25 @@ const year = new Date().getFullYear()
 </template>
 
 <style scoped>
-/* ===== Entrance animations (start when root gets .entered) ===== */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px) scale(.985); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-@keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-14px) scale(1); }
-  to   { opacity: 1; transform: translateY(0)      scale(1); }
-}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes fadeDown { from { opacity: 0; transform: translateY(-14px) scale(1); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .entered .animate-fade-up   { animation: fadeUp .56s cubic-bezier(.25,.8,.25,1) both;   animation-delay: var(--delay, 0ms); }
 .entered .animate-fade-down { animation: fadeDown .56s cubic-bezier(.25,.8,.25,1) both; animation-delay: var(--delay, 0ms); }
 
-/* ===== Confirm state animation (button grows in) ===== */
-@keyframes confirmGrow {
-  from { opacity: 0; transform: scale(.96); }
-  to   { opacity: 1; transform: scale(1); }
-}
+@keyframes confirmGrow { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 .confirm-grow { animation: confirmGrow .18s ease-out both; }
 
-/* ===== Link reveal pop ===== */
 @keyframes revealPop {
-  0%   { opacity: 0; transform: scale(.96); }
-  60%  { opacity: 1; transform: scale(1.03); }
+  0% { opacity: 0; transform: scale(.96); }
+  60% { opacity: 1; transform: scale(1.03); }
   100% { opacity: 1; transform: scale(1); }
 }
 .reveal-pop { animation: revealPop .38s cubic-bezier(.2,.8,.2,1) both; }
 
-/* ===== Chat micro-interactions ===== */
 .bubble-enter-active { transition: opacity .18s ease, transform .18s ease; }
 .bubble-enter-from   { opacity: 0; transform: translateY(4px) scale(.98); }
 .bubble-move         { transition: transform .18s ease; }
 
-/* Typing dots */
 .typing-dots { display: inline-flex; gap: 6px; align-items: center; }
 .typing-dots span {
   width: 6px; height: 6px; border-radius: 9999px; background: currentColor; opacity: .35;
@@ -525,12 +525,10 @@ const year = new Date().getFullYear()
 .typing-dots span:nth-child(3){ animation-delay: .3s; }
 @keyframes typing-blink { 0%,80%,100%{opacity:.25; transform:translateY(0)} 40%{opacity:.9; transform:translateY(-1px)} }
 
-/* Vue <transition> fallbacks */
 .fade-enter-active, .fade-leave-active { transition: opacity .35s, transform .35s; }
 .fade-enter-from,   .fade-leave-to     { opacity: 0; transform: scale(.98); }
 .fade-enter-to,     .fade-leave-from   { opacity: 1; transform: scale(1); }
 
-/* Progress bar shell (if reused) */
 .progress-track { width: 100%; height: 6px; border-radius: 9999px; background: linear-gradient(to right, oklch(var(--b3)) 0%, oklch(var(--b3)) 100%); overflow: hidden; }
 .progress-fill  { height: 100%; width: 0%; background: oklch(var(--p)); transition: width .35s cubic-bezier(.25,.8,.25,1); }
 </style>
