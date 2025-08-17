@@ -27,7 +27,9 @@
       <!-- Middle (carousel only) -->
       <div class="flex-1 flex w-full bg-base-200 justify-center items-center p-4 pt-6 overflow-hidden">
         <div class="relative w-full flex items-center justify-center">
-          <div class="card cp-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 relative overflow-hidden mb-3 w-64 max-w-64">
+          <div
+            class="card cp-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 relative overflow-hidden mb-3 w-64 max-w-64"
+          >
             <transition
               mode="out-in"
               :enter-active-class="transitionClasses.enterActive"
@@ -37,10 +39,19 @@
             >
               <div :key="currentPlan.id">
                 <div class="card-body flex flex-col gap-2 p-5 min-h-[320px] h-[320px] overflow-hidden">
-                  <span class="badge badge-sm mt-1 ml-1 mb-2 uppercase tracking-wide" :class="currentPlan.badgeClass">{{ currentPlan.badge }}</span>
-                  <h2 class="text-2xl font-extrabold ml-1 leading-tight -mt-0.5 tracking-tight">{{ currentPlan.title }}</h2>
-                  <span class="text-xl ml-1 pb-2 font-semibold tracking-wide">{{ currentPlan.price }}</span>
-                  <div class="text-sm text-base-content/80 ml-1 pb-3">{{ currentPlan.desc }}</div>
+                  <span
+                    class="badge badge-sm mt-1 ml-1 mb-2 uppercase tracking-wide"
+                    :class="currentPlan.badgeClass"
+                  >{{ currentPlan.badge }}</span>
+                  <h2 class="text-2xl font-extrabold ml-1 leading-tight -mt-0.5 tracking-tight">
+                    {{ currentPlan.title }}
+                  </h2>
+                  <span class="text-xl ml-1 pb-2 font-semibold tracking-wide">
+                    {{ currentPlan.price }}
+                  </span>
+                  <div class="text-sm text-base-content ml-1 pb-3 opacity-80">
+                    {{ currentPlan.desc }}
+                  </div>
                   <div class="details-collapse">
                     <div class="details-content-wrapper-fixed ml-1">
                       <ul class="mt-0 flex flex-col gap-0 text-sm details-list">
@@ -49,12 +60,30 @@
                           :key="i"
                           class="p-0 m-0 details-li pb-0"
                         >
-                          <template v-if="feature.type === 'taxes' && (currentPlan.id === 'unlimited' || feature.linedOut)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 me-2 inline-block text-base-content/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                            <span class="line-through text-base-content/50">{{ feature.text }}</span>
+                          <template
+                            v-if="feature.type === 'taxes' && (currentPlan.id === 'unlimited' || feature.linedOut)"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="size-4 me-2 inline-block text-base-content opacity-50"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="line-through text-base-content opacity-50">{{ feature.text }}</span>
                           </template>
                           <template v-else>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="size-4 me-2 inline-block text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="size-4 me-2 inline-block text-success"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
                             <span>{{ feature.text }}</span>
                           </template>
                         </li>
@@ -92,6 +121,17 @@
             </svg>
           </button>
         </div>
+      </div>
+
+      <!-- Bottom status (always visible; message changes with progress) -->
+      <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
+        <p
+          class="flex items-center gap-2"
+          :class="footerClass"
+        >
+          <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
+          <span>{{ footerText }}</span>
+        </p>
       </div>
     </div>
   </dialog>
@@ -181,6 +221,27 @@ const transitionClasses = computed(() => {
   return carouselDirection.value === 'slide-left'
     ? { enterActive:`${base} ease-out`, leaveActive:`${base} ease-in`, enterFrom:'opacity-0 translate-x-full', leaveTo:'opacity-0 -translate-x-full' }
     : { enterActive:`${base} ease-out`, leaveActive:`${base} ease-in`, enterFrom:'opacity-0 -translate-x-full', leaveTo:'opacity-0 translate-x-full' }
+})
+
+/** Footer message + style (no slash opacity classes) */
+const footerText = computed(() => {
+  if (tutorialComplete.value) {
+    return 'Completed: you went from the first plan to the last and back to the start.'
+  }
+  if (reachedEnd.value && !returnedToStart.value) {
+    return 'Almost there — now go back to the first plan to finish.'
+  }
+  return 'Goal: go through all the plans from beginning to end, then return to the start.'
+})
+const footerClass = computed(() => {
+  if (tutorialComplete.value) return 'text-success font-medium'
+  if (reachedEnd.value && !returnedToStart.value) return 'text-warning font-medium'
+  return 'text-base-content opacity-80'
+})
+const footerIcon = computed(() => {
+  if (tutorialComplete.value) return '✅'
+  if (reachedEnd.value && !returnedToStart.value) return '↩️'
+  return '🎯'
 })
 </script>
 
