@@ -11,9 +11,7 @@
     >
       <!-- Top -->
       <div class="flex items-center h-[72px] border-b border-base-200 bg-base-200 px-4">
-        <h2 class="text-2xl font-bold">
-          Comparison Prevention
-        </h2>
+        <h2 class="text-2xl font-bold">Comparison Prevention</h2>
       </div>
 
       <!-- X close (top-right) -->
@@ -26,10 +24,9 @@
         >✕</button>
       </form>
 
-      <!-- Middle (carousel only, chat removed) -->
+      <!-- Middle (carousel only) -->
       <div class="flex-1 flex w-full bg-base-200 justify-center items-center p-4 pt-6 overflow-hidden">
-        <div class="relative w-full flex items-center justify-center"><!-- clip slide animations -->
-          <!-- Card (centered) -->
+        <div class="relative w-full flex items-center justify-center">
           <div class="card cp-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 relative overflow-hidden mb-3 w-64 max-w-64">
             <transition
               mode="out-in"
@@ -69,7 +66,7 @@
             </transition>
           </div>
 
-          <!-- Prev (left edge, vertically centered) -->
+          <!-- Prev -->
           <button
             class="btn btn-circle btn-primary shadow-md hover:shadow-lg absolute left-2 top-1/2 -translate-y-1/2 z-10 disabled:opacity-40 disabled:pointer-events-none"
             aria-label="Previous plan"
@@ -82,7 +79,7 @@
             </svg>
           </button>
 
-          <!-- Next (right edge, vertically centered) -->
+          <!-- Next -->
           <button
             class="btn btn-circle btn-primary shadow-md hover:shadow-lg absolute right-2 top-1/2 -translate-y-1/2 z-10 disabled:opacity-40 disabled:pointer-events-none"
             aria-label="Next plan"
@@ -108,6 +105,7 @@ const LOCAL_KEY = 'comparison_prevention_tutorial_complete'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
+  onComplete: { type: Function, default: () => {} },
   id: { type: [String, Number], default: null }
 })
 const emit = defineEmits(['close', 'complete'])
@@ -140,102 +138,60 @@ function handleNext() {
   if (currentIndex.value < plans.length - 1) {
     carouselDirection.value = 'slide-left'
     currentIndex.value++
-    if (currentIndex.value === plans.length - 1) {
-      reachedEnd.value = true
-    }
+    if (currentIndex.value === plans.length - 1) reachedEnd.value = true
   }
   checkCompletion()
 }
-
 function handlePrev() {
   if (currentIndex.value > 0) {
     carouselDirection.value = 'slide-right'
     currentIndex.value--
-    if (currentIndex.value === 0 && reachedEnd.value) {
-      returnedToStart.value = true
-    }
+    if (currentIndex.value === 0 && reachedEnd.value) returnedToStart.value = true
   }
   checkCompletion()
 }
-
 function checkCompletion() {
   if (reachedEnd.value && returnedToStart.value && !tutorialComplete.value) {
-  tutorialComplete.value = true
-  localStorage.setItem(LOCAL_KEY, '1')
-  emit('complete')               // ← fire completion event
+    tutorialComplete.value = true
+    try { localStorage.setItem(LOCAL_KEY, '1') } catch { /* empty */ }
+    // Primary: emit event; Fallback: invoke prop callback
+    emit('complete', props.id || 'comparisonprevention')
+    if (typeof props.onComplete === 'function') props.onComplete()
   }
 }
-
 function handleClose() {
   emit('close')
   if (tutorialComplete.value) {
-    emit('complete')               // ← ensure completion is captured if they close after finishing
+    // Re-emit on close in case completion happened just before close
+    emit('complete', props.id || 'comparisonprevention')
+    if (typeof props.onComplete === 'function') props.onComplete()
   }
 }
-
-function onXClick() {
-  // Close immediately
-  dialogRef.value?.close()
-  handleClose()
-}
-
-function onDialogCancel(e) {
-  // Allow ESC to close right away, but keep our emit/onComplete semantics
-  e.preventDefault()
-  dialogRef.value?.close()
-  handleClose()
-}
-
-function onDialogNativeClose() {
-  // Backdrop click or native close: just emit
-  handleClose()
-}
+function onXClick() { dialogRef.value?.close(); handleClose() }
+function onDialogCancel(e) { e.preventDefault(); dialogRef.value?.close(); handleClose() }
+function onDialogNativeClose() { handleClose() }
 
 useOpenDialog(props, dialogRef, () => {
-  tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY)
+  try { tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY) } catch { /* empty */ }
 })
 
-// Tailwind-based transition classes for carousel direction
+// Direction classes
 const transitionClasses = computed(() => {
-  const base = 'transition-all duration-200';
+  const base = 'transition-all duration-200'
   return carouselDirection.value === 'slide-left'
-    ? {
-        enterActive: `${base} ease-out`,
-        leaveActive: `${base} ease-in`,
-        enterFrom: 'opacity-0 translate-x-full',
-        leaveTo: 'opacity-0 -translate-x-full',
-      }
-    : {
-        enterActive: `${base} ease-out`,
-        leaveActive: `${base} ease-in`,
-        enterFrom: 'opacity-0 -translate-x-full',
-        leaveTo: 'opacity-0 translate-x-full',
-      }
+    ? { enterActive:`${base} ease-out`, leaveActive:`${base} ease-in`, enterFrom:'opacity-0 translate-x-full', leaveTo:'opacity-0 -translate-x-full' }
+    : { enterActive:`${base} ease-out`, leaveActive:`${base} ease-in`, enterFrom:'opacity-0 -translate-x-full', leaveTo:'opacity-0 translate-x-full' }
 })
 </script>
 
 <style scoped>
-/* Keep modal open animation only */
-@keyframes tutorial-modal-in { from { opacity:0; transform:translateY(12px) scale(.97);} to { opacity:1; transform:translateY(0) scale(1);} }
+@keyframes tutorial-modal-in { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
 .animate-in { animation:tutorial-modal-in .28s cubic-bezier(.25,.8,.25,1); }
 @media (prefers-reduced-motion:reduce){ .animate-in { animation:none; } }
 
-/* Card polish */
-.cp-card {
-  border-radius: 0.9rem;
-  will-change: transform;
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-}
-
-/* Details section: subtly hide the bottom to prevent easy comparison */
-.details-collapse {
-  position: relative;
-  max-height: 140px; /* keep a fixed viewport for the list */
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0));
-          mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0));
-}
-.details-content-wrapper-fixed { padding-right: .25rem; }
-.details-list { list-style: none; padding: 0; margin: 0; }
-.details-li { margin: .15rem 0; }
+.cp-card { border-radius:.9rem; will-change:transform; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.details-collapse { position:relative; max-height:140px; overflow:hidden; -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0)); mask-image:linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0)); }
+.details-content-wrapper-fixed{ padding-right:.25rem; }
+.details-list{ list-style:none; padding:0; margin:0; }
+.details-li{ margin:.15rem 0; }
 </style>

@@ -1,10 +1,4 @@
-<!-- file: pages/home.vue -->
 <script setup lang="ts">
-/* Robust unlocks:
-   - Hydrate completion from localStorage on mount (client-only).
-   - Re-check localStorage after each modal close.
-   - Still keep child -> parent callback + optional @complete event. */
-
 import { ref, computed, onMounted, nextTick, onBeforeUnmount, reactive, watch } from 'vue'
 import type { Component } from 'vue'
 
@@ -21,7 +15,6 @@ import VisualInterfaceTutorial from '~/components/tutorials/VisualInterfaceTutor
 
 definePageMeta({ title: 'Home – Dark Patterns IO' })
 
-/* Map component names (strong typing) */
 const _tutorialComponentKeys = [
   'ComparisonPreventionTutorial','ConfirmshamingTutorial','FakeScarcityTutorial','FakeUrgencyTutorial',
   'HiddenCostsTutorial','NaggingTutorial','ObstructionTutorial','PreselectionTutorial','TrickWordingTutorial','VisualInterfaceTutorial',
@@ -32,47 +25,56 @@ const tutorialComponents: Record<TutorialComponentKey, Component> = {
   HiddenCostsTutorial, NaggingTutorial, ObstructionTutorial, PreselectionTutorial, TrickWordingTutorial, VisualInterfaceTutorial,
 }
 
-/* LocalStorage keys for completion (one per pattern).
-   If a child writes its key (value '1'), we mark that step complete. */
-const COMPLETION_KEYS: Record<string,string> = {
-  comparisonprevention: 'comparison_prevention_tutorial_complete',
-  confirmshaming:       'confirmshaming_tutorial_complete',
-  fakescarcity:         'fakescarcity_tutorial_complete',
-  fakeurgency:          'fakeurgency_tutorial_complete',
-  hiddencosts:          'hidden_costs_tutorial_complete',
-  nagging:              'nagging_tutorial_complete',
-  obstruction:          'obstruction_tutorial_complete',
-  preselection:         'preselection_tutorial_complete',
-  trickwording:         'trickwording_tutorial_complete',
-  visualinterface:      'visualinterface_tutorial_complete'
-}
-
-/* Static content (pure data) */
 const patterns: Array<{ id:string; label:string; component:TutorialComponentKey; message:string; action:string }> = [
   { id:'comparisonprevention', label:'Comparison prevention', component:'ComparisonPreventionTutorial', message:'The carousel made comparing plans hard – especially since plan UltraStream hid taxes. Always check per-unit costs and fine print to avoid false discounts.', action:'Opened the first one, let’s go.' },
-  { id:'confirmshaming',       label:'Confirmshaming',        component:'ConfirmshamingTutorial',      message:'Here, declining a newsletter shows "OK, I’ll pay more" – framing "no" as foolish. Remember: ethical design never punishes refusal!', action:'Alright, #2 is checked off.' },
-  { id:'fakescarcity',         label:'Fake scarcity',         component:'FakeScarcityTutorial',        message:'Notice how "Only 2 left!" triggered urgency despite ample stock? This exact tactic is used daily on shopping sites – always verify stock claims to avoid false pressure.', action:'Just had a look at example three.' },
-  { id:'fakeurgency',          label:'Fake urgency',          component:'FakeUrgencyTutorial',         message:'The artificial timer rushed you, but real sales rarely end – they just restart. This endless "urgency" cycle is standard on retail sites.', action:'Fourth one done and dusted.' },
-  { id:'hiddencosts',          label:'Hidden costs',          component:'HiddenCostsTutorial',         message:'Notice the "service fees" added at checkout? This bait-and-switch tactic is standard on ticketing sites – always check the final total before paying.', action:'#5 is out of the way.' },
-  { id:'nagging',              label:'Nagging',               component:'NaggingTutorial',             message:'Notice how the popup reappeared after declining? Real nagging systems loop until you choose what they wanted – this denies genuine choice.', action:'I went through the sixth example.' },
-  { id:'obstruction',          label:'Obstruction',           component:'ObstructionTutorial',         message:'Notice how many steps it took? This isn’t poor design – it’s deliberate obstruction. Real sites bury cancellation to retain users', action:'Number seven opened, moving on.' },
-  { id:'preselection',         label:'Preselection',          component:'PreselectionTutorial',        message:'All options were pre-checked – forcing you to manually uncheck extras. Sites do this to trick users into accidental consent.', action:'Example eight is wrapped up.' },
-  { id:'trickwording',         label:'Trick wording',         component:'TrickWordingTutorial',        message:'The double-negative might have tricked you. Real sites use this language maze to retain users – always pause and reread options.', action:'Took care of #9.' },
-  { id:'visualinterface',      label:'Visual interface',      component:'VisualInterfaceTutorial',     message:'You’ve just learned how to spot dark patterns and how to stay safer online by recognizing tricks that websites often use. Before you go, we’d love your help. A new button has been unlocked below — filling out the short form will support our research and make this project even better. Your experience matters, and together we can help make the web a fairer place.', action:'All ten finished — that’s the lot.' },
+  { id:'confirmshaming', label:'Confirmshaming', component:'ConfirmshamingTutorial', message:'Here, declining a newsletter shows "OK, I’ll pay more" – framing "no" as foolish. Remember: ethical design never punishes refusal!', action:'Alright, #2 is checked off.' },
+  { id:'fakescarcity', label:'Fake scarcity', component:'FakeScarcityTutorial', message:'Notice how "Only 2 left!" triggered urgency despite ample stock? This exact tactic is used daily on shopping sites – always verify stock claims to avoid false pressure.', action:'Just had a look at example three.' },
+  { id:'fakeurgency', label:'Fake urgency', component:'FakeUrgencyTutorial', message:'The artificial timer rushed you, but real sales rarely end – they just restart. This endless "urgency" cycle is standard on retail sites.', action:'Fourth one done and dusted.' },
+  { id:'hiddencosts', label:'Hidden costs', component:'HiddenCostsTutorial', message:'Notice the "service fees" added at checkout? This bait-and-switch tactic is standard on ticketing sites – always check the final total before paying.', action:'#5 is out of the way.' },
+  { id:'nagging', label:'Nagging', component:'NaggingTutorial', message:'Notice how the popup reappeared after declining? Real nagging systems loop until you choose what they wanted – this denies genuine choice.', action:'I went through the sixth example.' },
+  { id:'obstruction', label:'Obstruction', component:'ObstructionTutorial', message:'Notice how many steps it took? This isn’t poor design – it’s deliberate obstruction. Real sites bury cancellation to retain users', action:'Number seven opened, moving on.' },
+  { id:'preselection', label:'Preselection', component:'PreselectionTutorial', message:'All options were pre-checked – forcing you to manually uncheck extras. Sites do this to trick users into accidental consent.', action:'Example eight is wrapped up.' },
+  { id:'trickwording', label:'Trick wording', component:'TrickWordingTutorial', message:'The double-negative might have tricked you. Real sites use this language maze to retain users – always pause and reread options.', action:'Took care of #9.' },
+  { id:'visualinterface', label:'Visual interface', component:'VisualInterfaceTutorial', message:'You’ve just learned how to spot dark patterns and how to stay safer online by recognizing tricks that websites often use. Before you go, we’d love your help. A new button has been unlocked below — filling out the short form will support our research and make this project even better. Your experience matters, and together we can help make the web a fairer place.', action:'All ten finished — that’s the lot.' },
 ]
 
-/* Progress + modal state */
+// Completion state
 const completed = ref<boolean[]>(Array(patterns.length).fill(false))
 const activeModal = ref<string|null>(null)
 const afterCloseMessages = ref<{side:'start'|'end',text:string}[]>([])
 const openedPatterns = ref<Set<string>>(new Set())
 const completionAnnounced = ref<Set<string>>(new Set())
 
-/* Share link */
+// Map child storage keys (must match each child)
+const STORAGE_KEYS: Record<string, string> = {
+  comparisonprevention: 'comparison_prevention_tutorial_complete',
+  confirmshaming:      'confirmshaming_tutorial_complete',
+  fakescarcity:        'fake_scarcity_tutorial_complete',
+  fakeurgency:         'fake_urgency_tutorial_complete',
+  hiddencosts:         'hidden_costs_tutorial_complete',
+  nagging:             'nagging_tutorial_complete',
+  obstruction:         'obstruction_tutorial_complete',
+  preselection:        'preselection_tutorial_complete',
+  trickwording:        'trick_wording_tutorial_complete',
+  visualinterface:     'visual_interface_tutorial_complete'
+}
+
+function syncCompletionFromStorage() {
+  try {
+    patterns.forEach((p, idx) => {
+      const k = STORAGE_KEYS[p.id]
+      if (k && localStorage.getItem(k) === '1') {
+        if (!completed.value[idx]) completed.value[idx] = true
+      }
+    })
+  } catch { /* ignore SSR/storage errors */ }
+}
+
+// Share link
 const showLinkHolder = ref<boolean>(false)
 function unlockLinkHolder(){ showLinkHolder.value = true }
 
-/* Chat */
+// Chat (unchanged core)
 type Msg = { id:number; side:'start'|'end'; text?:string; typed?:string; typingIndicator?:boolean; pendingText?:string; duration?:number }
 const chatMessages = ref<Msg[]>([])
 const chatBoxRef = ref<HTMLDivElement|null>(null)
@@ -112,11 +114,9 @@ function enqueueTypingThenMessage(side:'start'|'end', text:string, typingMs=750)
   messageQueue.push(m); processQueue()
 }
 function pushGuide(t:string){ enqueueMessage('start', t) }
-
-/* DOM-safe scroll */
 function scrollChatToBottom(){ const el = chatBoxRef.value; if(el) el.scrollTop = el.scrollHeight }
 
-/* Step helper text */
+// Helper text
 function explainFor(id:string){
   const map:Record<string,string>={
     comparisonprevention:'The carousel made comparing plans hard – especially since Plan C hid taxes. Always check per-unit costs and fine print to avoid false discounts.',
@@ -133,62 +133,32 @@ function explainFor(id:string){
   return map[id] || 'Short guidance for this step.'
 }
 
-/* Initial guide with slight delays (keeps your earlier behavior) */
-onMounted(async ()=>{
-  await wait(250); pushGuide('Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?')
-  await wait(250); pushGuide('Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!')
-  await wait(300); pushGuide('Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!')
-  await wait(300); pushGuide('This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.')
+// Initial guide + sync storage
+onMounted(()=>{
+  pushGuide('Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?')
+  pushGuide('Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!')
+  pushGuide('Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!')
+  pushGuide('This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.')
+
+  syncCompletionFromStorage()
 })
 
-/* ——— Completion: hydrate + recheck ——— */
-
-/* Helper: mark complete by id (single source of truth) */
-function markCompleteById(id:string){
-  const idx = patterns.findIndex(p=>p.id===id)
-  if (idx === -1) return
-  if (!completed.value[idx]) completed.value[idx] = true
-}
-
-/* Read localStorage safely (client-only) and update completed[] */
-function hydrateCompletionFromStorage(){
-  try {
-    if (typeof window === 'undefined') return
-    patterns.forEach((p, i) => {
-      const key = COMPLETION_KEYS[p.id]
-      if (key && window.localStorage.getItem(key) === '1') {
-        completed.value[i] = true
-      }
-    })
-  } catch { /* ignore */ }
-}
-
-/* Re-check storage after any modal closes (covers missed callbacks) */
-function recheckAfterModalClose(){
-  hydrateCompletionFromStorage()
-}
-
-/* Modal control */
+// Modal control
 function openModal(id:string){
   const idx = patterns.findIndex(p=>p.id===id)
   if(!canOpen(idx)) return
   if(!openedPatterns.value.has(id)){ afterCloseMessages.value = [{ side:'end', text:patterns[idx].action }]; openedPatterns.value.add(id) }
   activeModal.value = null; setTimeout(()=>{ activeModal.value = id }, 0)
 }
-function closeModal(){
-  activeModal.value = null
-  // Give the child a tick to possibly write localStorage, then recheck.
-  setTimeout(recheckAfterModalClose, 30)
-}
+function closeModal(){ activeModal.value = null }
 
-/* Primary completion path: child calls onComplete() */
+// Primary complete handler (called by event and prop)
 function completePattern(id:string){
-  console.debug('[completePattern] received from', id)  // optional
-  const idx = patterns.findIndex(p => p.id === id)
-  if (completionAnnounced.value.has(id)) return
+  console.debug('[completePattern] received', id)
+  const idx = patterns.findIndex(p=>p.id===id)
+  if (idx < 0) return
   if (!completed.value[idx]) completed.value[idx] = true
-  if (idx === -1 || completionAnnounced.value.has(id)) return
-  markCompleteById(id)
+  if (completionAnnounced.value.has(id)) return
 
   const msgs=[...afterCloseMessages.value]
   msgs.push({ side:'start', text:patterns[idx].message })
@@ -197,23 +167,20 @@ function completePattern(id:string){
   completionAnnounced.value.add(id)
 }
 
-/* Flush queued messages after modal closes */
-function flushAfterCloseIfReady(){
-  if(!activeModal.value && afterCloseMessages.value.length){
-    const toFlush = afterCloseMessages.value.slice(); afterCloseMessages.value = []
-    nextTick(()=>{ toFlush.forEach(m=>enqueueTypingThenMessage(m.side, m.text, 750)) })
-  }
-}
-watch(activeModal, flushAfterCloseIfReady)
-watch(afterCloseMessages, flushAfterCloseIfReady)
+// After modal closes, re-sync from storage as a safety net
+watch(activeModal, (v)=>{ if(!v) syncCompletionFromStorage() })
+watch(afterCloseMessages, ()=>{ if(!activeModal.value && afterCloseMessages.value.length){
+  const toFlush = afterCloseMessages.value.slice(); afterCloseMessages.value = []
+  nextTick(()=>{ toFlush.forEach(m=>enqueueTypingThenMessage(m.side as 'start'|'end', m.text, 750)) })
+}})
 
-/* Progress */
+// Progress
 const completedCount = computed(()=> completed.value.filter(Boolean).length)
 const allCompleted = computed(()=> completed.value.length>0 && completed.value.every(Boolean))
 function canOpen(index:number){ return index===0 || completed.value.slice(0,index).every(Boolean) }
 const activePattern = computed(()=> patterns.filter(p=>p.id===activeModal.value))
 
-/* Viewport (no template DOM reads) */
+// Viewport gates
 const viewportW = ref(0)
 const isLtLg = computed(()=> viewportW.value>0 && viewportW.value<1024)
 const isTooSmall = ref(false)
@@ -223,21 +190,13 @@ function updateViewport(){
   isMobile.value = window.matchMedia('(max-width: 639px)').matches
   isTooSmall.value = window.innerWidth < Math.max(1, Math.floor(window.screen.width/2))
 }
-onMounted(()=>{
-  updateViewport()
-  window.addEventListener('resize', updateViewport, { passive:true })
-  hydrateCompletionFromStorage() // ← hydrate once on load
-})
-onBeforeUnmount(()=>{
-  window.removeEventListener('resize', updateViewport)
-  activeIntervals.forEach(clearInterval); activeIntervals.clear()
-})
+onMounted(()=>{ updateViewport(); window.addEventListener('resize', updateViewport, { passive:true }) })
+onBeforeUnmount(()=>{ window.removeEventListener('resize', updateViewport); activeIntervals.forEach(clearInterval); activeIntervals.clear() })
 
-/* Entrance animation trigger */
+// Entrance animation trigger
 const hasEntered = ref(false)
 onMounted(()=>{ setTimeout(()=>{ hasEntered.value = true }, 20) })
 
-/* Footer year */
 const year = new Date().getFullYear()
 </script>
 
@@ -424,40 +383,19 @@ const year = new Date().getFullYear()
 
       <!-- Active tutorial modal (also listen for optional @complete) -->
       <component
-        :is="tutorialComponents[pattern.component]"
-        v-for="pattern in activePattern"
-        :id="pattern.id"
-        :key="pattern.id"
-        :open="true"
-        @complete="completePattern(pattern.id)"          
-        @close="closeModal"
-      />
+      :is="tutorialComponents[pattern.component]"
+      v-for="pattern in activePattern"
+      :id="pattern.id"
+      :key="pattern.id"
+      :open="true"
+      :on-complete="() => completePattern(pattern.id)"   
+      @complete="() => completePattern(pattern.id)"      
+      @close="closeModal"
+    />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Entrance animations (SSR-safe) */
-@keyframes fadeUp { from { opacity:0; transform: translateY(14px) scale(.98) } to { opacity:1; transform: translateY(0) scale(1) } }
-@keyframes fadeDown { from { opacity:0; transform: translateY(-12px) } to { opacity:1; transform: translateY(0) } }
-.entered .animate-fade-up { animation: fadeUp .48s cubic-bezier(.25,.8,.25,1) both; animation-delay: var(--delay,0ms) }
-.entered .animate-fade-down { animation: fadeDown .44s cubic-bezier(.25,.8,.25,1) both; animation-delay: var(--delay,0ms) }
-
-/* Existing micro-interactions */
-.progress-track { width:100%; height:6px; border-radius:9999px; background:linear-gradient(to right, oklch(var(--b3)) 0%, oklch(var(--b3)) 100%); overflow:hidden }
-.progress-fill { height:100%; width:0%; background:oklch(var(--p)); transition: width .35s cubic-bezier(.25,.8,.25,1) }
-.bubble-enter-active { transition: opacity .18s ease, transform .18s ease }
-.bubble-enter-from { opacity:0; transform: translateY(4px) scale(.98) }
-.bubble-move { transition: transform .18s ease }
-
-/* typing indicator */
-.typing-dots { display:inline-flex; gap:6px; align-items:center }
-.typing-dots span { width:6px; height:6px; border-radius:9999px; background:currentColor; opacity:.35; animation: typing-blink 1s infinite ease-in-out }
-.typing-dots span:nth-child(2){ animation-delay:.15s }
-.typing-dots span:nth-child(3){ animation-delay:.3s }
-@keyframes typing-blink { 0%,80%,100%{opacity:.25; transform:translateY(0)} 40%{opacity:.9; transform:translateY(-1px)} }
-
-.fade-enter-active,.fade-leave-active { transition: opacity .35s, transform .35s }
-.fade-enter-from,.fade-leave-to { opacity:0; transform: scale(.98) }
-.fade-enter-to,.fade-leave-from { opacity:1; transform: scale(1) }
+/* keep your existing styles */
 </style>
