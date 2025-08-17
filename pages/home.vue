@@ -183,7 +183,10 @@ function closeModal(){
 
 /* Primary completion path: child calls onComplete() */
 function completePattern(id:string){
-  const idx = patterns.findIndex(p=>p.id===id)
+  console.debug('[completePattern] received from', id)  // optional
+  const idx = patterns.findIndex(p => p.id === id)
+  if (completionAnnounced.value.has(id)) return
+  if (!completed.value[idx]) completed.value[idx] = true
   if (idx === -1 || completionAnnounced.value.has(id)) return
   markCompleteById(id)
 
