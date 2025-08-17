@@ -11,9 +11,7 @@
     >
       <!-- Top -->
       <div class="flex items-center h-[72px] border-b border-base-200 bg-base-200 px-4">
-        <h2 class="text-2xl font-bold">
-          Confirmshaming
-        </h2>
+        <h2 class="text-2xl font-bold">Confirmshaming</h2>
       </div>
 
       <!-- X close (top-right) -->
@@ -39,9 +37,16 @@
               :leave-to-class="'opacity-0 -translate-y-3 scale-95'"
             >
               <!-- Loading -->
-              <div v-if="view === 'loading'" key="loading" class="w-full flex flex-col items-center justify-center py-12" aria-live="polite">
+              <div
+                v-if="view === 'loading'"
+                key="loading"
+                class="w-full flex flex-col items-center justify-center py-12"
+                aria-live="polite"
+              >
                 <span class="loading loading-spinner loading-lg text-primary" aria-label="Loading"/>
-                <div class="text-sm text-base-content/70 mt-3">{{ loaderText || 'Loading…' }}</div>
+                <div class="text-sm text-base-content opacity-70 mt-3">
+                  {{ loaderText || 'Loading…' }}
+                </div>
               </div>
 
               <!-- Step 1: Offer -->
@@ -52,11 +57,18 @@
               >
                 <div class="card-body items-center text-center gap-3 md:gap-4">
                   <h3 class="card-title text-lg md:text-xl mb-1.5">🎁 Get 10% Off Your First Purchase!</h3>
-                  <p class="text-sm md:text-base text-base-content/70 mb-2">Subscribe to our newsletter and save on your first order.</p>
+                  <p class="text-sm md:text-base text-base-content opacity-70 mb-2">
+                    Subscribe to our newsletter and save on your first order.
+                  </p>
                   <div class="flex flex-col gap-2 w-full">
-                    <button class="btn btn-primary btn-block shadow-sm hover:shadow" @click="handleSubscribe">Subscribe & Save 10%</button>
-                    <button class="btn btn-ghost btn-block text-base-content/80 hover:bg-base-200/70" @click="denyVoucher">
-                      No, I don't want to save money
+                    <button class="btn btn-primary btn-block shadow-sm hover:shadow" @click="handleSubscribe">
+                      Subscribe &amp; Save 10%
+                    </button>
+                    <button
+                      class="btn btn-ghost btn-block hover:bg-base-200/70"
+                      @click="denyVoucher"
+                    >
+                      No, I don’t want to save money
                     </button>
                   </div>
                 </div>
@@ -70,10 +82,17 @@
               >
                 <div class="card-body items-center text-center gap-3 md:gap-4">
                   <h3 class="card-title text-lg md:text-xl mb-1.5">Are you sure?</h3>
-                  <p class="text-sm md:text-base text-base-content/70 mb-2">Are you sure you want to pay more for your first buy?</p>
+                  <p class="text-sm md:text-base text-base-content opacity-70 mb-2">
+                    Are you sure you want to pay more for your first buy?
+                  </p>
                   <div class="flex flex-col gap-2 w-full">
-                    <button class="btn btn-primary btn-block shadow-sm hover:shadow" @click="backToVoucher">Go Back</button>
-                    <button class="btn btn-ghost btn-block text-base-content/80 hover:bg-base-200/70" @click="confirmPayMore">
+                    <button class="btn btn-primary btn-block shadow-sm hover:shadow" @click="backToVoucher">
+                      Go Back
+                    </button>
+                    <button
+                      class="btn btn-ghost btn-block hover:bg-base-200/70"
+                      @click="confirmPayMore"
+                    >
                       Yes, I want to pay more
                     </button>
                   </div>
@@ -88,18 +107,31 @@
               >
                 <div class="card-body items-center text-center gap-3 md:gap-4">
                   <h3 class="card-title text-lg md:text-xl mb-1.5">Your discount code</h3>
-                  <p class="text-sm md:text-base text-base-content/70 mb-1.5">Apply this code at checkout to save:</p>
-                  <div class="font-mono text-xl font-bold tracking-wider mb-4 select-all bg-gradient-to-br from-base-300/80 to-base-200/60 text-base-content px-3 py-2 rounded-md border border-base-300 ring-1 ring-primary/20 shadow-inner">
+                  <p class="text-sm md:text-base text-base-content opacity-70 mb-1.5">
+                    Apply this code at checkout to save:
+                  </p>
+                  <div
+                    class="font-mono text-xl font-bold tracking-wider mb-4 select-all bg-gradient-to-br from-base-300/80 to-base-200/60 text-base-content px-3 py-2 rounded-md border border-base-300 ring-1 ring-primary/20 shadow-inner"
+                  >
                     {{ discountCode }}
                   </div>
                   <div class="flex flex-col gap-2 w-full">
-                    <button class="btn btn-primary btn-block shadow-sm hover:shadow" @click="applyCode">Use code</button>
+                    <button class="btn btn-primary btn-block shadow-sm hover:shadow" @click="applyCode">
+                      Use code
+                    </button>
                   </div>
                 </div>
               </div>
             </transition>
           </div>
         </div>
+      </div>
+      <!-- Bottom status (always visible; message changes with progress) -->
+      <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
+        <p class="flex items-center gap-2" :class="footerClass">
+          <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
+          <span>{{ footerText }}</span>
+        </p>
       </div>
     </div>
   </dialog>
@@ -114,107 +146,111 @@ const props = defineProps({
   onComplete: { type: Function, default: () => {} },
   id: { type: [String, Number], default: null }
 })
-const emit = defineEmits(['close'])
+
+/** emit 'complete' so the parent can mark the step colored immediately */
+const emit = defineEmits(['close', 'complete'])
 const dialogRef = ref(null)
 
+/** state (no persistence) */
 const step = ref(1)
 const tutorialComplete = ref(false)
-const LOCAL_KEY = 'confirmshaming_tutorial_complete'
 
-// Unified loader state
+/** loader */
 const isLoading = ref(false)
-const loaderText = ref('') // message displayed under the spinner
-// Derived view for single keyed transition
+const loaderText = ref('')
 const view = computed(() => (isLoading.value ? 'loading' : `step-${step.value}`))
 
+/** discount code */
 const discountCode = ref('')
-function genDiscountCode() {
+function genDiscountCode () {
   return `SAVE10-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
 }
 
+/** open dialog on mount/prop change */
 useOpenDialog(props, dialogRef, () => {
+  // reset fresh state every time dialog opens
   step.value = 1
   isLoading.value = false
   loaderText.value = ''
-  tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY)
+  tutorialComplete.value = false
 })
 
-// Subscribe -> show code card (step 3)
-function handleSubscribe() {
+/** interactions */
+function handleSubscribe () {
   discountCode.value = genDiscountCode()
   step.value = 3
-  if (!tutorialComplete.value) {
-    tutorialComplete.value = true
-    localStorage.setItem(LOCAL_KEY, '1')
-  }
 }
 
-// Shame path -> step 2
-function denyVoucher() {
-  step.value = 2
-  tutorialComplete.value = true
-  localStorage.setItem(LOCAL_KEY, '1')
+function denyVoucher () {
+  step.value = 2 // shows “Almost done…”
 }
 
-function backToVoucher() {
-  // No loading/message when going back
+function backToVoucher () {
   step.value = 1
 }
 
-// Helper: show loader, then target step (no flicker, out-in handled by keyed transition)
-function goToLoadingThen(targetStep, delay = 900, message = 'Loading…') {
+function confirmPayMore () {
+  // finalize tutorial on explicit “pay more”
+  if (!tutorialComplete.value) {
+    tutorialComplete.value = true
+    // notify parent ASAP so the step becomes colored
+    emit('complete', props.id || 'confirmshaming')
+    if (typeof props.onComplete === 'function') props.onComplete()
+  }
+  goToLoadingThen(1, 900, 'resetting view')
+}
+
+function applyCode () {
+  // not completing here, just resetting
+  goToLoadingThen(1, 900, 'resetting view')
+}
+
+function goToLoadingThen (targetStep, delay = 900, message = 'Loading…') {
   loaderText.value = message
   isLoading.value = true
   setTimeout(async () => {
-    step.value = targetStep          // prepare next view while still loading
-    await nextTick()                 // ensure DOM updates keep loader mounted first
-    isLoading.value = false          // switch to target step; out-in ensures smooth swap
-    loaderText.value = ''            // clear after transition
+    step.value = targetStep
+    await nextTick()
+    isLoading.value = false
+    loaderText.value = ''
   }, delay)
 }
 
-// Pay more -> loader -> step 1
-function confirmPayMore() {
-  goToLoadingThen(1, 900, 'reseting dark pattern view')
-}
+/** footer messaging — mirrors Comparison Prevention behavior */
+const footerIcon = computed(() => {
+  if (tutorialComplete.value) return '✅'
+  if (view.value === 'step-2') return '⏳'
+  return '🎯'
+})
+const footerText = computed(() => {
+  if (tutorialComplete.value) return 'Completed'
+  if (view.value === 'step-2') return 'Almost done…'
+  return 'Go through all the steps'
+})
 
-// Accept code -> loader -> step 1
-function applyCode() {
-  goToLoadingThen(1, 900, 'reseting dark pattern view')
-}
-
-function handleClose() {
+/** close handling */
+function handleClose () {
   emit('close')
+  // if completion happened before closing but parent missed it, ensure callback:
   if (tutorialComplete.value && typeof props.onComplete === 'function') {
     props.onComplete()
   }
 }
-function onXClick() {
-  dialogRef.value?.close()
-  handleClose()
-}
-function onDialogCancel(e) {
-  e.preventDefault()
-  dialogRef.value?.close()
-  handleClose()
-}
-function onDialogNativeClose() {
-  handleClose()
-}
+function onXClick () { dialogRef.value?.close() }
+function onDialogCancel () { /* let native ESC close */ }
+function onDialogNativeClose () { handleClose() }
 </script>
 
 <style scoped>
-/* Keep modal open animation only */
 @keyframes tutorial-modal-in {
-  from { opacity:0; transform: translateY(12px) scale(.97); }
-  to { opacity:1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 .animate-in { animation: tutorial-modal-in .28s cubic-bezier(.25,.8,.25,1); }
-@media (prefers-reduced-motion: reduce) { .animate-in { animation: none; } }
+@media (prefers-reduced-motion: reduce){ .animate-in { animation: none; } }
 
-/* Card polish */
 .confirm-card {
-  border-radius: 0.9rem;
+  border-radius: .9rem;
   will-change: transform;
   transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
