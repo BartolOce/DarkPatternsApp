@@ -61,7 +61,7 @@
                           class="p-0 m-0 details-li pb-0"
                         >
                           <template
-                            v-if="feature.type === 'taxes' && (currentPlan.id === 'unlimited' || feature.linedOut)"
+                            v-if="feature.type === 'taxes' && feature.linedOut"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -125,10 +125,7 @@
 
       <!-- Bottom status (always visible; message changes with progress) -->
       <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
-        <p
-          class="flex items-center gap-2"
-          :class="footerClass"
-        >
+        <p class="flex items-center gap-2" :class="footerClass">
           <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
           <span>{{ footerText }}</span>
         </p>
@@ -141,7 +138,8 @@
 import { ref, computed } from 'vue'
 import { useOpenDialog } from '~/composables/useOpenDialog.js'
 
-const LOCAL_KEY = 'comparison_prevention_tutorial_complete'
+// No persistence: keep the key only if you might reuse later
+// const LOCAL_KEY = 'comparison_prevention_tutorial_complete'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -193,8 +191,8 @@ function handlePrev() {
 function checkCompletion() {
   if (reachedEnd.value && returnedToStart.value && !tutorialComplete.value) {
     tutorialComplete.value = true
-    try { localStorage.setItem(LOCAL_KEY, '1') } catch { /* empty */ }
-    // Primary: emit event; Fallback: invoke prop callback
+    // If you ever want to keep a record, uncomment this:
+    // try { localStorage.setItem(LOCAL_KEY, '1') } catch {}
     emit('complete', props.id || 'comparisonprevention')
     if (typeof props.onComplete === 'function') props.onComplete()
   }
@@ -202,7 +200,6 @@ function checkCompletion() {
 function handleClose() {
   emit('close')
   if (tutorialComplete.value) {
-    // Re-emit on close in case completion happened just before close
     emit('complete', props.id || 'comparisonprevention')
     if (typeof props.onComplete === 'function') props.onComplete()
   }
@@ -212,7 +209,7 @@ function onDialogCancel(e) { e.preventDefault(); dialogRef.value?.close(); handl
 function onDialogNativeClose() { handleClose() }
 
 useOpenDialog(props, dialogRef, () => {
-  try { tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY) } catch { /* empty */ }
+  // No persistence read — ensures fresh session every time
 })
 
 // Direction classes
@@ -246,7 +243,10 @@ const footerIcon = computed(() => {
 </script>
 
 <style scoped>
-@keyframes tutorial-modal-in { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes tutorial-modal-in {
+  from { opacity:0; transform:translateY(12px) scale(.97); }
+  to   { opacity:1; transform:translateY(0)   scale(1); }
+}
 .animate-in { animation:tutorial-modal-in .28s cubic-bezier(.25,.8,.25,1); }
 @media (prefers-reduced-motion:reduce){ .animate-in { animation:none; } }
 
