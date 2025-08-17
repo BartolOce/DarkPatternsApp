@@ -26,22 +26,25 @@
 
       <!-- Middle section -->
       <div class="flex-1 flex w-full bg-base-200 justify-center items-center p-4 overflow-y-auto overflow-x-hidden">
-        <div class="relative w-full flex items-center justify-center overflow-hidden"><!-- clip slide animations -->
+        <div class="relative w-full flex flex-col items-center justify-center overflow-hidden">
+          <!-- Content carousel -->
           <transition :name="carouselDirection" mode="out-in">
+            <!-- Step 1: Product card -->
             <div v-if="step === 1" key="card" class="flex flex-col items-center justify-center">
-              <div class="scale-90 origin-center"><!-- uniformly shrink the product card -->
+              <div class="scale-90 origin-center">
                 <ProductCard
                   :left="fakeStockInput"
                   :show-stock="stockOption === 'fake'"
                 />
               </div>
             </div>
+
+            <!-- Step 2: Stock options -->
             <div v-else key="stock" class="flex flex-col items-center justify-center">
               <div class="card bg-gradient-to-br from-base-100 to-base-200/60 shadow-xl w-full max-w-md border border-white relative overflow-hidden">
-                <!-- removed pattern overlay -->
                 <div class="card-body">
                   <h3 class="card-title">Stock display</h3>
-                  <p class="text-sm opacity-80 -mt-1">Choose how stock is presented to the user.</p>
+                  <p class="text-sm text-base-content opacity-80 -mt-1">Choose how stock is presented to the user.</p>
 
                   <!-- Options -->
                   <div class="mt-3 grid gap-3">
@@ -66,9 +69,8 @@
                         </div>
                         <div class="flex-1">
                           <div class="font-medium">Show real stock</div>
-                          <div class="text-xs opacity-70">Accurate inventory reflected to the user.</div>
+                          <div class="text-xs text-base-content opacity-70">Accurate inventory reflected to the user.</div>
                         </div>
-                        <!-- Selected badge (absolute to avoid layout shift) -->
                         <span
                           v-show="stockOption === 'real'"
                           class="badge badge-primary absolute right-3 top-3 pointer-events-none"
@@ -97,9 +99,8 @@
                         </div>
                         <div class="flex-1">
                           <div class="font-medium">Show fake scarcity</div>
-                          <div class="text-xs opacity-70">Display a low “left in stock” message.</div>
+                          <div class="text-xs text-base-content opacity-70">Display a low “left in stock” message.</div>
                         </div>
-                        <!-- Selected badge (absolute to avoid layout shift) -->
                         <span
                           v-show="stockOption === 'fake'"
                           class="badge badge-warning absolute right-3 top-3 pointer-events-none"
@@ -112,7 +113,7 @@
                   <div class="mt-4">
                     <div class="form-control w-full">
                       <label class="label py-1 justify-start gap-2">
-                        <span class="label-text text-xs opacity-70">Fake stock left:</span>
+                        <span class="label-text text-xs text-base-content opacity-70">Fake stock left:</span>
                         <input
                           v-model.number="fakeStockInput"
                           type="number"
@@ -127,6 +128,8 @@
               </div>
             </div>
           </transition>
+
+          <!-- Toggle button (next/prev) -->
           <button
             class="btn btn-circle btn-primary transition-transform duration-200 absolute right-0 top-1/2 -translate-y-1/2 z-10"
             :class="step === 2 ? 'rotate-180' : ''"
@@ -139,12 +142,19 @@
           </button>
         </div>
       </div>
+      <!-- Bottom status (always visible; message changes with progress) -->
+      <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
+        <p class="flex items-center gap-2" :class="footerClass">
+          <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
+          <span>{{ footerText }}</span>
+        </p>
+      </div>
     </div>
   </dialog>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useOpenDialog } from '~/composables/useOpenDialog.js'
 import ProductCard from '~/components/ProductCard.vue'
 
@@ -153,7 +163,7 @@ const props = defineProps({
   onComplete: { type: Function, default: () => {} },
   id: { type: [String, Number], default: null }
 })
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'complete'])
 const dialogRef = ref(null)
 
 const LOCAL_KEY = 'fake_scarcity_tutorial_complete'
@@ -165,45 +175,69 @@ const stockOption = ref('fake')
 const fakeStockInput = ref(2)
 
 useOpenDialog(props, dialogRef, () => {
+  // fresh state each open
   step.value = 1
-  tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY)
+  carouselDirection.value = 'slide-left'
+  tutorialComplete.value = false
   stockOption.value = 'fake'
   fakeStockInput.value = 2
 })
 
-function toggleStep() {
+function toggleStep () {
   if (step.value === 1) {
+    // going to options
     carouselDirection.value = 'slide-left'
     step.value = 2
-    tutorialComplete.value = true
-    localStorage.setItem(LOCAL_KEY, '1')
   } else {
+    // returning to product card; complete only if user chose "real"
     carouselDirection.value = 'slide-right'
     step.value = 1
+    if (!tutorialComplete.value && stockOption.value === 'real') {
+      tutorialComplete.value = true
+      try { localStorage.setItem(LOCAL_KEY, '1') } catch { /* empty */ }
+      // notify parent immediately so the step gets colored
+      emit('complete', props.id || 'fakescarcity')
+      if (typeof props.onComplete === 'function') props.onComplete()
+    }
   }
 }
 
-// Close helpers (X/ESC/backdrop), consistent with other modals
-function handleClose() {
+// Footer status (mirrors Comparison Prevention)
+const footerIcon = computed(() => {
+  if (tutorialComplete.value) return '✅'
+  if (step.value === 2) return '⏳'
+  return '🎯'
+})
+const footerText = computed(() => {
+  if (tutorialComplete.value) return 'Completed'
+  if (step.value === 2) return 'Almost done…'
+  return 'Go through both views'
+})
+
+// Close helpers (X/ESC/backdrop)
+function handleClose () {
   emit('close')
-  if (tutorialComplete.value && typeof props.onComplete === 'function') props.onComplete()
+  if (tutorialComplete.value && typeof props.onComplete === 'function') {
+    // in case parent listens only to onComplete prop
+    props.onComplete()
+  }
 }
-function onXClick() {
+function onXClick () {
   dialogRef.value?.close()
   handleClose()
 }
-function onDialogCancel(e) {
+function onDialogCancel (e) {
   e.preventDefault()
   dialogRef.value?.close()
   handleClose()
 }
-function onDialogNativeClose() {
+function onDialogNativeClose () {
   handleClose()
 }
 </script>
 
 <style scoped>
-/* ...existing slide transitions... */
+/* slide transitions */
 .slide-left-enter-active,
 .slide-left-leave-active,
 .slide-right-enter-active,
@@ -215,9 +249,10 @@ function onDialogNativeClose() {
 .slide-right-enter-from{ opacity: 0; transform: translateX(-100%); }
 .slide-right-leave-to  { opacity: 0; transform: translateX(100%); }
 
+/* modal open animation */
 @keyframes tutorial-modal-in {
   from { opacity:0; transform: translateY(12px) scale(.97); }
-  to { opacity:1; transform: translateY(0) scale(1); }
+  to   { opacity:1; transform: translateY(0)   scale(1); }
 }
 .animate-in { animation: tutorial-modal-in .28s cubic-bezier(.25,.8,.25,1); }
 @media (prefers-reduced-motion: reduce) { .animate-in { animation: none; } }

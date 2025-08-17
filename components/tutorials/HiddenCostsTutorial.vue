@@ -1,3 +1,4 @@
+<!-- file: components/tutorials/HiddenCostsTutorial.vue -->
 <template>
   <dialog
     ref="dialogRef"
@@ -43,13 +44,12 @@
               aria-live="polite"
             >
               <span class="loading loading-spinner loading-lg text-primary" aria-label="Loading"/>
-              <div class="text-sm text-base-content/70 mt-3">{{ loaderText || 'Loading…' }}</div>
+              <div class="text-sm opacity-70 mt-3">{{ loaderText || 'Loading…' }}</div>
             </div>
 
             <!-- Step 1 -->
             <div v-else-if="view === 'step-1'" key="s1" class="card hc-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
               <div class="card-body">
-                <!-- ...existing step 1 content... -->
                 <div class="flex items-center justify-between">
                   <div>
                     <div class="text-2xl font-semibold tracking-wide">{{ seatSection }}</div>
@@ -83,7 +83,6 @@
             <!-- Step 2 -->
             <div v-else-if="view === 'step-2'" key="s2" class="card hc-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
               <div class="card-body">
-                <!-- ...existing step 2 content... -->
                 <h3 class="card-title">Enter details</h3>
                 <p class="text-sm mb-3">We just need a few details to continue.</p>
                 <div class="form-control mb-2">
@@ -99,7 +98,7 @@
                     Review order
                   </button>
                 </div>
-                <div class="text-xs text-base-content/60 flex items-center justify-center gap-2 mt-3">
+                <div class="text-xs opacity-60 flex items-center justify-center gap-2 mt-3">
                   🔒 Secure checkout
                 </div>
               </div>
@@ -108,7 +107,6 @@
             <!-- Step 3 -->
             <div v-else key="s3" class="card hc-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
               <div class="card-body">
-                <!-- ...existing step 3 content... -->
                 <h3 class="card-title">Order summary</h3>
                 <p class="text-sm mb-3">Almost there...</p>
 
@@ -144,7 +142,7 @@
                     <span v-else class="loading loading-spinner loading-sm"/>
                   </button>
                 </div>
-                <div class="text-xs text-base-content/60 flex items-center justify-center gap-2 mt-3">
+                <div class="text-xs opacity-60 flex items-center justify-center gap-2 mt-3">
                   🔒 Secure checkout
                 </div>
               </div>
@@ -153,13 +151,19 @@
         </div>
       </div>
 
-      <!-- Bottom removed -->
+      <!-- Bottom status (always visible; message changes with progress) -->
+      <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
+        <p class="flex items-center gap-2" :class="footerClass">
+          <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
+          <span>{{ footerText }}</span>
+        </p>
+      </div>
     </div>
   </dialog>
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue' // added nextTick
+import { ref, computed, nextTick } from 'vue'
 import { useOpenDialog } from '~/composables/useOpenDialog.js'
 
 const props = defineProps({
@@ -167,15 +171,21 @@ const props = defineProps({
   onComplete: { type: Function, default: () => {} },
   id: { type: [String, Number], default: null }
 })
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close','complete'])
 const dialogRef = ref(null)
 
-const LOCAL_KEY = 'hidden_costs_tutorial_complete'
-
+/* No persistence: always fresh each time */
 const tutorialComplete = ref(false)
 const step = ref(1)
 
-// Mimic the screenshot values
+/* Stage:
+   0 = start
+   1 = Almost done…  (after Continue → step 2)
+   2 = Completed     (right when Review order → step 3)
+*/
+const stage = ref(0)
+
+/* Mimic screenshot values */
 const seatSection = '112'
 const seatRow = 'Row Y'
 const BASE_TICKET_PRICE = 310.05
@@ -183,7 +193,6 @@ const SERVICE_RATE = 86.13 / 310.05
 const FULFILLMENT_FEE = 4.95
 
 const qty = ref(1)
-
 const ticketPrice = computed(() => +(BASE_TICKET_PRICE * qty.value).toFixed(2))
 const revealFees = ref(false)
 const serviceFee = computed(() => (revealFees.value ? +(BASE_TICKET_PRICE * SERVICE_RATE * qty.value).toFixed(2) : 0))
@@ -195,7 +204,7 @@ const buyerEmail = ref('')
 
 const isProcessing = ref(false)
 
-/* New: unified loader state + derived view */
+/* Unified loader */
 const isLoading = ref(false)
 const loaderText = ref('')
 const view = computed(() => (isLoading.value ? 'loading' : `step-${step.value}`))
@@ -206,33 +215,38 @@ function money(n) {
 
 function nextFromStep1() {
   step.value = 2
-}
-function goToReview() {
-  step.value = 3
-  // Delay to "reveal" hidden fees like the example
-  revealFees.value = false
-  setTimeout(() => {
-    revealFees.value = true
-    if (!tutorialComplete.value) {
-      tutorialComplete.value = true
-      localStorage.setItem(LOCAL_KEY, '1')
-    }
-  }, 900)
+  if (stage.value < 1) stage.value = 1 // ⏳ Almost done…
 }
 
-/* Helper: show loader, then target step (match Confirmshaming) */
+function goToReview() {
+  step.value = 3
+
+  // ✅ Mark completed immediately and notify parent right now
+  if (stage.value < 2) stage.value = 2
+  if (!tutorialComplete.value) {
+    tutorialComplete.value = true
+    emit('complete', props.id || 'hiddencosts')
+    if (typeof props.onComplete === 'function') props.onComplete()
+  }
+
+  // Reveal fees with a small delay (visual effect only)
+  revealFees.value = false
+  setTimeout(() => { revealFees.value = true }, 900)
+}
+
+/* Loader helper */
 function goToLoadingThen(targetStep, delay = 900, message = 'Loading…') {
   loaderText.value = message
   isLoading.value = true
   setTimeout(async () => {
-    step.value = targetStep          // prepare next view while still loading
-    await nextTick()                 // ensure DOM updates keep loader mounted first
-    isLoading.value = false          // switch to target step; out-in ensures smooth swap
-    loaderText.value = ''            // clear after transition
+    step.value = targetStep
+    await nextTick()
+    isLoading.value = false
+    loaderText.value = ''
   }, delay)
 }
 
-// Loop back to step 1 when user clicks Pay now (with loader)
+/* Reset flow on Pay now */
 function payNow() {
   isProcessing.value = true
   setTimeout(() => {
@@ -241,14 +255,30 @@ function payNow() {
     buyerEmail.value = ''
     revealFees.value = false
     isProcessing.value = false
-    goToLoadingThen(1, 900, 'reseting dark pattern view') // message aligned with Confirmshaming
+    goToLoadingThen(1, 900, 'reseting dark pattern view')
   }, 300)
 }
 
-// Close helpers (X/ESC/backdrop) consistent with other modals
+/* Footer status */
+const footerIcon = computed(() => {
+  if (stage.value >= 2) return '✅'
+  if (stage.value >= 1) return '⏳'
+  return '🎯'
+})
+const footerText = computed(() => {
+  if (stage.value >= 2) return 'Tutorial completed!'
+  if (stage.value >= 1) return 'Almost done…'
+  return 'Pick seats and proceed'
+})
+const footerClass = computed(() => {
+  if (stage.value >= 2) return 'text-success font-semibold'
+  if (stage.value >= 1) return 'text-warning font-medium'
+  return 'text-base-content opacity-70'
+})
+
+/* Close helpers (X/ESC/backdrop) — closing never marks completion */
 function handleClose() {
   emit('close')
-  if (tutorialComplete.value && typeof props.onComplete === 'function') props.onComplete()
 }
 function onXClick() {
   dialogRef.value?.close()
@@ -263,16 +293,17 @@ function onDialogNativeClose() {
   handleClose()
 }
 
+/* Open dialog: always start fresh (no localStorage) */
 useOpenDialog(props, dialogRef, () => {
-  // Reset per-open
   step.value = 1
+  stage.value = 0
   qty.value = 1
   buyerName.value = ''
   buyerEmail.value = ''
   revealFees.value = false
   isLoading.value = false
   loaderText.value = ''
-  tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY)
+  tutorialComplete.value = false
 })
 </script>
 
@@ -285,12 +316,12 @@ useOpenDialog(props, dialogRef, () => {
 /* Keep modal open animation only */
 @keyframes tutorial-modal-in {
   from { opacity:0; transform: translateY(12px) scale(.97); }
-  to { opacity:1; transform: translateY(0) scale(1); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
 }
 .animate-in { animation: tutorial-modal-in .28s cubic-bezier(.25,.8,.25,1); }
 @media (prefers-reduced-motion: reduce) { .animate-in { animation: none; } }
 
-/* Card polish for hidden-costs */
+/* Card polish */
 .hc-card {
   border-radius: 0.9rem;
   will-change: transform;

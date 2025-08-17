@@ -1,28 +1,47 @@
+<!-- file: components/tutorials/ObstructionTutorial.vue -->
 <template>
   <dialog ref="dialogRef" class="modal" @cancel="onDialogCancel" @close="onDialogNativeClose">
-    <div class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col" :class="{ 'animate-in': open }">
+    <div
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      :class="{ 'animate-in': open }"
+    >
       <!-- Top -->
       <div class="flex items-center h-[72px] border-b border-base-200 bg-base-200 px-4">
         <h2 class="text-2xl font-bold">Obstruction</h2>
       </div>
+
       <!-- X -->
       <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="Close" title="Close" @click.prevent="onXClick">✕</button>
+        <button
+          class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+          aria-label="Close"
+          title="Close"
+          @click.prevent="onXClick"
+        >✕</button>
       </form>
 
       <!-- Middle -->
       <div class="flex-1 flex items-center justify-center w-full bg-base-200 overflow-y-auto overflow-x-hidden p-4">
-        <div class="w-full max-w-md ">
+        <div class="w-full max-w-md">
           <transition name="fade" mode="out-in">
             <!-- Loading -->
-            <div v-if="loading" key="loading" class="card bg-gradient-to-br from-base-100 to-base-200/60 border border-white shadow-lg">
+            <div
+              v-if="loading"
+              key="loading"
+              class="card bg-gradient-to-br from-base-100 to-base-200/60 border border-white shadow-lg"
+            >
               <div class="card-body items-center text-center gap-3">
                 <span class="loading loading-spinner loading-lg"/>
                 <div class="text-sm opacity-80">{{ loadingText }}</div>
               </div>
             </div>
+
             <!-- Stepper -->
-            <div v-else :key="'step'+step" class="card bg-gradient-to-br from-base-100 to-base-200/60 border border-white shadow-lg">
+            <div
+              v-else
+              :key="'step'+step"
+              class="card bg-gradient-to-br from-base-100 to-base-200/60 border border-white shadow-lg"
+            >
               <div class="card-body">
                 <!-- Decoy card -->
                 <template v-if="decoyActive">
@@ -40,7 +59,8 @@
                   <ul class="menu bg-base-200/50 rounded-box mt-3">
                     <li><a @click.prevent="fakeAction('Profile', 1)">Profile</a></li>
                     <li><a @click.prevent="fakeAction('Security', 1)">Security</a></li>
-                    <li><a class="active" @click.prevent="go(2)">Subscriptions</a></li>
+                    <!-- Subscriptions triggers "Almost done…" -->
+                    <li><a class="active" @click.prevent="handleSubscriptions">Subscriptions</a></li>
                     <li><a @click.prevent="fakeAction('Notifications', 1)">Notifications</a></li>
                   </ul>
                 </template>
@@ -83,15 +103,15 @@
                   <p class="text-sm opacity-80">Please tell us why you’re canceling.</p>
                   <div class="form-control mt-3 flex flex-col gap-2">
                     <label class="label cursor-pointer justify-start gap-3">
-                      <input v-model="reason" type="radio" class="radio radio-primary" value="price" >
+                      <input v-model="reason" type="radio" class="radio radio-primary" value="price">
                       <span>Too expensive</span>
                     </label>
                     <label class="label cursor-pointer justify-start gap-3">
-                      <input v-model="reason" type="radio" class="radio radio-primary" value="rarely" >
+                      <input v-model="reason" type="radio" class="radio radio-primary" value="rarely">
                       <span>I rarely use it</span>
                     </label>
                     <label class="label cursor-pointer justify-start gap-3">
-                      <input v-model="reason" type="radio" class="radio radio-primary" value="alt" >
+                      <input v-model="reason" type="radio" class="radio radio-primary" value="alt">
                       <span>Found a better alternative</span>
                     </label>
                   </div>
@@ -119,32 +139,61 @@
           </transition>
         </div>
       </div>
+
+      <!-- Bottom status -->
+      <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
+        <p class="flex items-center gap-2" :class="footerClass">
+          <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
+          <span>{{ footerText }}</span>
+        </p>
+      </div>
     </div>
   </dialog>
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useOpenDialog } from '~/composables/useOpenDialog.js'
 
-const props = defineProps({ open: { type: Boolean, required: true }, onComplete: { type: Function, default: () => {} }, id: { type: [String, Number], default: null } })
-const emit = defineEmits(['close'])
+const props = defineProps({
+  open: { type: Boolean, required: true },
+  onComplete: { type: Function, default: () => {} },
+  id: { type: [String, Number], default: null }
+})
+const emit = defineEmits(['close','complete'])
 const dialogRef = ref(null)
 
-const LOCAL_KEY = 'obstruction_tutorial_complete'
-const tutorialComplete = ref(false)
+/* Fresh each open — no persistence (matches NaggingTutorial behavior) */
+const tutorialComplete = ref(false) // used only to guard double-emits during a single open
 
+/* Steps & UI */
 const step = ref(1)
 const loading = ref(false)
 const loadingText = ref('loading')
 const reason = ref('')
 const loaderId = ref(null)
 
+/* Decoy */
 const decoyActive = ref(false)
 const decoyTitle = ref('')
 const decoyText = ref('')
 const decoyBackStep = ref(1)
 const decoyTimerId = ref(null)
+
+/* Footer stage (0=start, 1=Almost done…, 2=Completed) */
+const stage = ref(0)
+
+const footerIcon = computed(() => (stage.value >= 2 ? '✅' : stage.value >= 1 ? '⏳' : '🎯'))
+const footerText = computed(() =>
+  stage.value >= 2 ? 'Tutorial completed!' :
+  stage.value >= 1 ? 'Almost done…' :
+  'Navigate to Subscriptions and cancel'
+)
+const footerClass = computed(() =>
+  stage.value >= 2 ? 'text-success font-semibold' :
+  stage.value >= 1 ? 'text-warning font-medium' :
+  'text-base-content opacity-70'
+)
 
 function setLoading(text = 'loading', hold = 900) {
   loadingText.value = text
@@ -152,6 +201,7 @@ function setLoading(text = 'loading', hold = 900) {
   clearTimeout(loaderId.value)
   loaderId.value = setTimeout(() => { loading.value = false }, hold)
 }
+
 function fakeAction(label, backStep) {
   const hold = 700
   setLoading('loading', hold)
@@ -163,23 +213,47 @@ function fakeAction(label, backStep) {
     decoyActive.value = true
   }, hold + 10)
 }
-function exitDecoy() { decoyActive.value = false; step.value = decoyBackStep.value }
+
+function exitDecoy() {
+  decoyActive.value = false
+  step.value = decoyBackStep.value
+}
+
 function go(nextStep) {
   decoyActive.value = false
   setLoading()
   setTimeout(() => { step.value = nextStep }, 300)
 }
-function finalizeCancel() {
-  if (!tutorialComplete.value) { tutorialComplete.value = true; localStorage.setItem(LOCAL_KEY, '1') }
-  setLoading('loading', 1000)
-  setTimeout(() => { step.value = 1; reason.value = ''; setLoading('loading', 700) }, 350)
+
+/* Subscriptions click moves stage to 1 ("Almost done…") */
+function handleSubscriptions() {
+  if (stage.value < 1) stage.value = 1
+  go(2)
 }
 
-function handleClose() { emit('close'); if (tutorialComplete.value && typeof props.onComplete === 'function') props.onComplete() }
+/* Final confirm marks completion once, emits to parent, then soft-resets steps */
+function finalizeCancel() {
+  if (stage.value < 2) stage.value = 2
+  if (!tutorialComplete.value) {
+    tutorialComplete.value = true
+    emit('complete', props.id || 'obstruction') // inform parent once
+    if (typeof props.onComplete === 'function') props.onComplete()
+  }
+  setLoading('loading', 1000)
+  setTimeout(() => {
+    step.value = 1
+    reason.value = ''
+    setLoading('loading', 700)
+  }, 350)
+}
+
+/* Close helpers — closing never marks completion */
+function handleClose() { emit('close') }
 function onXClick() { dialogRef.value?.close(); handleClose() }
 function onDialogCancel(e) { e.preventDefault(); dialogRef.value?.close(); handleClose() }
 function onDialogNativeClose() { handleClose() }
 
+/* Reset fresh each open (no persistence, start from stage 0) */
 useOpenDialog(props, dialogRef, () => {
   step.value = 1
   reason.value = ''
@@ -191,10 +265,15 @@ useOpenDialog(props, dialogRef, () => {
   decoyBackStep.value = 1
   clearTimeout(loaderId.value)
   clearTimeout(decoyTimerId.value)
-  tutorialComplete.value = !!localStorage.getItem(LOCAL_KEY)
+
+  tutorialComplete.value = false       // ✨ do not restore completion
+  stage.value = 0                      // ✨ always start at beginning
 })
 
-onBeforeUnmount(() => { clearTimeout(loaderId.value); clearTimeout(decoyTimerId.value) })
+onBeforeUnmount(() => {
+  clearTimeout(loaderId.value)
+  clearTimeout(decoyTimerId.value)
+})
 </script>
 
 <style scoped>
