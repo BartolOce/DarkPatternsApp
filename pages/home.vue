@@ -1,4 +1,11 @@
+<!-- file: pages/home.vue -->
 <script setup lang="ts">
+/* Restores:
+   - Typing dots animation (longer visible duration + reliable CSS).
+   - First-load entrance animations for header/cards/section.
+   - "Instant chat" mode once all steps are completed (no typewriter).
+*/
+
 import { ref, computed, onMounted, nextTick, onBeforeUnmount, reactive, watch } from 'vue'
 import type { Component } from 'vue'
 
@@ -15,6 +22,7 @@ import VisualInterfaceTutorial from '~/components/tutorials/VisualInterfaceTutor
 
 definePageMeta({ title: 'Home – Dark Patterns IO' })
 
+// Component map
 const _tutorialComponentKeys = [
   'ComparisonPreventionTutorial','ConfirmshamingTutorial','FakeScarcityTutorial','FakeUrgencyTutorial',
   'HiddenCostsTutorial','NaggingTutorial','ObstructionTutorial','PreselectionTutorial','TrickWordingTutorial','VisualInterfaceTutorial',
@@ -25,6 +33,7 @@ const tutorialComponents: Record<TutorialComponentKey, Component> = {
   HiddenCostsTutorial, NaggingTutorial, ObstructionTutorial, PreselectionTutorial, TrickWordingTutorial, VisualInterfaceTutorial,
 }
 
+// Static content
 const patterns: Array<{ id:string; label:string; component:TutorialComponentKey; message:string; action:string }> = [
   { id:'comparisonprevention', label:'Comparison prevention', component:'ComparisonPreventionTutorial', message:'The carousel made comparing plans hard – especially since plan UltraStream hid taxes. Always check per-unit costs and fine print to avoid false discounts.', action:'Opened the first one, let’s go.' },
   { id:'confirmshaming', label:'Confirmshaming', component:'ConfirmshamingTutorial', message:'Here, declining a newsletter shows "OK, I’ll pay more" – framing "no" as foolish. Remember: ethical design never punishes refusal!', action:'Alright, #2 is checked off.' },
@@ -38,43 +47,18 @@ const patterns: Array<{ id:string; label:string; component:TutorialComponentKey;
   { id:'visualinterface', label:'Visual interface', component:'VisualInterfaceTutorial', message:'You’ve just learned how to spot dark patterns and how to stay safer online by recognizing tricks that websites often use. Before you go, we’d love your help. A new button has been unlocked below — filling out the short form will support our research and make this project even better. Your experience matters, and together we can help make the web a fairer place.', action:'All ten finished — that’s the lot.' },
 ]
 
-// Completion state
+// Progress / modal
 const completed = ref<boolean[]>(Array(patterns.length).fill(false))
 const activeModal = ref<string|null>(null)
 const afterCloseMessages = ref<{side:'start'|'end',text:string}[]>([])
 const openedPatterns = ref<Set<string>>(new Set())
 const completionAnnounced = ref<Set<string>>(new Set())
 
-// Map child storage keys (must match each child)
-const STORAGE_KEYS: Record<string, string> = {
-  comparisonprevention: 'comparison_prevention_tutorial_complete',
-  confirmshaming:      'confirmshaming_tutorial_complete',
-  fakescarcity:        'fake_scarcity_tutorial_complete',
-  fakeurgency:         'fake_urgency_tutorial_complete',
-  hiddencosts:         'hidden_costs_tutorial_complete',
-  nagging:             'nagging_tutorial_complete',
-  obstruction:         'obstruction_tutorial_complete',
-  preselection:        'preselection_tutorial_complete',
-  trickwording:        'trick_wording_tutorial_complete',
-  visualinterface:     'visual_interface_tutorial_complete'
-}
-
-function syncCompletionFromStorage() {
-  try {
-    patterns.forEach((p, idx) => {
-      const k = STORAGE_KEYS[p.id]
-      if (k && localStorage.getItem(k) === '1') {
-        if (!completed.value[idx]) completed.value[idx] = true
-      }
-    })
-  } catch { /* ignore SSR/storage errors */ }
-}
-
 // Share link
 const showLinkHolder = ref<boolean>(false)
 function unlockLinkHolder(){ showLinkHolder.value = true }
 
-// Chat (unchanged core)
+// Chat
 type Msg = { id:number; side:'start'|'end'; text?:string; typed?:string; typingIndicator?:boolean; pendingText?:string; duration?:number }
 const chatMessages = ref<Msg[]>([])
 const chatBoxRef = ref<HTMLDivElement|null>(null)
@@ -85,6 +69,28 @@ const activeIntervals = new Set<number>()
 const betweenBubbleDelayMs = 180
 const wait = (ms:number)=>new Promise(r=>setTimeout(r,ms))
 
+// NEW: instant chat mode (auto-enabled when all steps are completed)
+const instantChat = ref(false)
+function setInstantChatOn(){
+  if (instantChat.value) return
+  instantChat.value = true
+  // Flush any queued items instantly
+  while (messageQueue.length) {
+    const m = messageQueue.shift()!
+    if (m.typingIndicator) {
+      // Convert typing indicator into final message immediately
+      m.typingIndicator = false
+      if (m.pendingText) {
+        m.text = m.pendingText
+        delete m.pendingText
+      }
+    }
+    m.typed = m.text || ''
+    chatMessages.value.push(m)
+  }
+}
+
+// Typewriter (kept for non-instant mode)
 function startTyping(msg:Msg, speed=22){
   msg.typed=''; const full=msg.text||''; let i=0
   return new Promise<void>(resolve=>{
@@ -95,28 +101,65 @@ function startTyping(msg:Msg, speed=22){
     activeIntervals.add(interval)
   })
 }
+
 async function processQueue(){
-  if(isTyping.value) return
+  if (instantChat.value) {
+    // Instant: no typing, no dots
+    const next = messageQueue.shift()
+    if (!next) return
+    next.typingIndicator = false
+    if (next.pendingText) {
+      next.text = next.pendingText
+      delete next.pendingText
+    }
+    next.typed = next.text || ''
+    chatMessages.value.push(next)
+    await nextTick()
+    if (messageQueue.length) setTimeout(processQueue, 0)
+    return
+  }
+
+  if (isTyping.value) return
   const next = messageQueue.shift(); if(!next) return
   isTyping.value = true; chatMessages.value.push(next); await nextTick()
-  if(next.typingIndicator){
-    scrollChatToBottom(); await wait(next.duration||700)
-    if(next.pendingText){ next.typingIndicator=false; next.text=next.pendingText; delete next.pendingText; next.typed=''; await startTyping(next) }
-    else { const idx = chatMessages.value.findIndex(m=>m.id===next.id); if(idx!==-1) chatMessages.value.splice(idx,1) }
-  } else { await startTyping(next) }
-  isTyping.value=false; if(messageQueue.length) setTimeout(processQueue, betweenBubbleDelayMs)
+
+  if (next.typingIndicator) {
+    // Make typing dots visible long enough to notice
+    scrollChatToBottom()
+    await wait(next.duration || 1100) // ← longer default so dots are visible
+    if (next.pendingText) {
+      next.typingIndicator = false
+      next.text = next.pendingText
+      delete next.pendingText
+      next.typed = ''
+      await startTyping(next, 22)
+    } else {
+      const idx = chatMessages.value.findIndex(m => m.id === next.id)
+      if (idx !== -1) chatMessages.value.splice(idx, 1)
+    }
+  } else {
+    await startTyping(next, 22)
+  }
+
+  isTyping.value = false
+  if (messageQueue.length) setTimeout(processQueue, betweenBubbleDelayMs)
 }
-function enqueueMessage(side:'start'|'end', text:string){
-  const m = reactive<Msg>({ id: msgSeq++, side, text, typed:'' }); messageQueue.push(m); processQueue()
-}
-function enqueueTypingThenMessage(side:'start'|'end', text:string, typingMs=750){
+
+function enqueueTypingThenMessage(side:'start'|'end', text:string, typingMs=900){
+  if (instantChat.value) {
+    const m: Msg = reactive({ id: msgSeq++, side, text, typed: text })
+    chatMessages.value.push(m)
+    return
+  }
   const m = reactive<Msg>({ id: msgSeq++, side, typingIndicator:true, duration:typingMs, pendingText:text, typed:'' })
-  messageQueue.push(m); processQueue()
+  messageQueue.push(m)
+  processQueue()
 }
-function pushGuide(t:string){ enqueueMessage('start', t) }
+
+// DOM-safe scroll
 function scrollChatToBottom(){ const el = chatBoxRef.value; if(el) el.scrollTop = el.scrollHeight }
 
-// Helper text
+// Step helper
 function explainFor(id:string){
   const map:Record<string,string>={
     comparisonprevention:'The carousel made comparing plans hard – especially since Plan C hid taxes. Always check per-unit costs and fine print to avoid false discounts.',
@@ -133,14 +176,13 @@ function explainFor(id:string){
   return map[id] || 'Short guidance for this step.'
 }
 
-// Initial guide + sync storage
-onMounted(()=>{
-  pushGuide('Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?')
-  pushGuide('Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!')
-  pushGuide('Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!')
-  pushGuide('This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.')
-
-  syncCompletionFromStorage()
+// Initial guide (small delays so dots are visible)
+onMounted(async ()=>{
+  await wait(220) // slight global delay to let entrance anims start
+  enqueueTypingThenMessage('start','Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?', 1000)
+  enqueueTypingThenMessage('start','Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!', 1000)
+  enqueueTypingThenMessage('start','Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!', 1000)
+  enqueueTypingThenMessage('start','This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.', 1000)
 })
 
 // Modal control
@@ -151,28 +193,23 @@ function openModal(id:string){
   activeModal.value = null; setTimeout(()=>{ activeModal.value = id }, 0)
 }
 function closeModal(){ activeModal.value = null }
-
-// Primary complete handler (called by event and prop)
 function completePattern(id:string){
-  console.debug('[completePattern] received', id)
   const idx = patterns.findIndex(p=>p.id===id)
-  if (idx < 0) return
-  if (!completed.value[idx]) completed.value[idx] = true
-  if (completionAnnounced.value.has(id)) return
-
+  if(completionAnnounced.value.has(id)) return
+  if(!completed.value[idx]) completed.value[idx] = true
   const msgs=[...afterCloseMessages.value]
   msgs.push({ side:'start', text:patterns[idx].message })
   const next = patterns[idx+1]; if(next) msgs.push({ side:'start', text:explainFor(next.id) })
-  afterCloseMessages.value = msgs
-  completionAnnounced.value.add(id)
+  afterCloseMessages.value = msgs; completionAnnounced.value.add(id)
 }
-
-// After modal closes, re-sync from storage as a safety net
-watch(activeModal, (v)=>{ if(!v) syncCompletionFromStorage() })
-watch(afterCloseMessages, ()=>{ if(!activeModal.value && afterCloseMessages.value.length){
-  const toFlush = afterCloseMessages.value.slice(); afterCloseMessages.value = []
-  nextTick(()=>{ toFlush.forEach(m=>enqueueTypingThenMessage(m.side as 'start'|'end', m.text, 750)) })
-}})
+function flushAfterCloseIfReady(){
+  if(!activeModal.value && afterCloseMessages.value.length){
+    const toFlush = afterCloseMessages.value.slice(); afterCloseMessages.value = []
+    nextTick(()=>{ toFlush.forEach(m=>enqueueTypingThenMessage(m.side, m.text, 1000)) })
+  }
+}
+watch(activeModal, flushAfterCloseIfReady)
+watch(afterCloseMessages, flushAfterCloseIfReady)
 
 // Progress
 const completedCount = computed(()=> completed.value.filter(Boolean).length)
@@ -180,7 +217,10 @@ const allCompleted = computed(()=> completed.value.length>0 && completed.value.e
 function canOpen(index:number){ return index===0 || completed.value.slice(0,index).every(Boolean) }
 const activePattern = computed(()=> patterns.filter(p=>p.id===activeModal.value))
 
-// Viewport gates
+// When all steps are completed → switch to instant chat mode
+watch(allCompleted, (val) => { if (val) setInstantChatOn() })
+
+// Viewport (no template DOM reads)
 const viewportW = ref(0)
 const isLtLg = computed(()=> viewportW.value>0 && viewportW.value<1024)
 const isTooSmall = ref(false)
@@ -190,21 +230,29 @@ function updateViewport(){
   isMobile.value = window.matchMedia('(max-width: 639px)').matches
   isTooSmall.value = window.innerWidth < Math.max(1, Math.floor(window.screen.width/2))
 }
-onMounted(()=>{ updateViewport(); window.addEventListener('resize', updateViewport, { passive:true }) })
-onBeforeUnmount(()=>{ window.removeEventListener('resize', updateViewport); activeIntervals.forEach(clearInterval); activeIntervals.clear() })
+onMounted(()=>{
+  updateViewport()
+  window.addEventListener('resize', updateViewport, { passive:true })
+})
+onBeforeUnmount(()=>{
+  window.removeEventListener('resize', updateViewport)
+  activeIntervals.forEach(clearInterval); activeIntervals.clear()
+})
 
-// Entrance animation trigger
+// Entrance animation trigger (adds a class to root after mount)
 const hasEntered = ref(false)
-onMounted(()=>{ setTimeout(()=>{ hasEntered.value = true }, 20) })
+onMounted(()=>{ setTimeout(()=>{ hasEntered.value = true }, 30) })
 
+// Footer year
 const year = new Date().getFullYear()
 </script>
 
 <template>
+  <!-- Add 'entered' class on first mount to trigger keyframes -->
   <div :class="[{ entered: hasEntered }]">
     <!-- Responsive gates -->
     <div v-if="isMobile" class="flex items-center justify-center min-h-screen bg-base-200">
-      <div class="bg-base-100 rounded-xl shadow-lg p-8 text-center max-w-md mx-auto animate-fade-up" style="--delay:80ms">
+      <div class="bg-base-100 rounded-xl shadow-lg p-8 text-center max-w-md mx-auto animate-fade-up" style="--delay:120ms">
         <h2 class="text-2xl font-bold mb-4">Mobile Not Supported</h2>
         <p class="text-lg text-base-content/80">
           This website is not available for mobile format right now.<br>
@@ -214,7 +262,7 @@ const year = new Date().getFullYear()
     </div>
 
     <div v-else-if="isTooSmall" class="flex items-center justify-center min-h-screen bg-base-200">
-      <div class="bg-base-100 rounded-xl shadow-lg p-8 text-center max-w-md mx-auto animate-fade-up" style="--delay:80ms">
+      <div class="bg-base-100 rounded-xl shadow-lg p-8 text-center max-w-md mx-auto animate-fade-up" style="--delay:120ms">
         <h2 class="text-2xl font-bold mb-4">Screen Too Small</h2>
         <p class="text-lg text-base-content/80">
           For the full experience, please put your browser in full screen.
@@ -236,7 +284,7 @@ const year = new Date().getFullYear()
         <div class="w-full max-w-5xl mx-auto px-2 sm:px-4 h-full py-4 sm:py-6 flex flex-col min-h-0">
           <div class="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 items-stretch flex-1 min-h-0">
             <!-- Steps -->
-            <div class="card w-full bg-base-100 border border-base-300 shadow lg:col-span-1 h-full animate-fade-up" style="--delay:80ms" :class="{ 'min-h-[340px]': isLtLg }">
+            <div class="card w-full bg-base-100 border border-base-300 shadow lg:col-span-1 h-full animate-fade-up" style="--delay:120ms" :class="{ 'min-h-[340px]': isLtLg }">
               <div class="card-body p-2 sm:p-4 h-full overflow-auto">
                 <ul class="steps steps-vertical">
                   <li
@@ -260,12 +308,14 @@ const year = new Date().getFullYear()
             <!-- Chat + Share -->
             <div class="flex flex-col flex-1 lg:col-span-2 h-full min-h-0 gap-4" :class="{ 'min-h-[340px]': isLtLg }">
               <!-- Chat -->
-              <div class="card w-full bg-base-100 border border-base-300 shadow flex-1 min-h-0 flex flex-col overflow-hidden max-h-[60vh] lg:min-h-0 lg:max-h-none animate-fade-up" style="--delay:140ms" :class="{ 'min-h-[340px]': isLtLg }">
+              <div class="card w-full bg-base-100 border border-base-300 shadow flex-1 min-h-0 flex flex-col overflow-hidden max-h-[60vh] lg:min-h-0 lg:max-h-none animate-fade-up" style="--delay:180ms" :class="{ 'min-h-[340px]': isLtLg }">
                 <div ref="chatBoxRef" class="flex-1 basis-0 w-full overflow-y-auto overflow-x-hidden p-2 sm:p-4 space-y-3 overscroll-contain [scrollbar-gutter:stable] text-base">
                   <TransitionGroup name="bubble" tag="div" class="space-y-3">
                     <div v-for="m in chatMessages" :key="m.id" class="chat" :class="m.side === 'start' ? 'chat-start' : 'chat-end'">
                       <div :class="['chat-bubble mx-2', m.side === 'end' ? 'bg-primary text-primary-content' : '']">
-                        <div v-if="m.typingIndicator" class="typing-dots"><span /><span /><span /></div>
+                        <div v-if="m.typingIndicator" class="typing-dots">
+                          <span /><span /><span />
+                        </div>
                         <template v-else>
                           <span v-if="m.typed && m.typed.length">{{ m.typed }}</span>
                           <span v-else class="opacity-60 select-none">...</span>
@@ -277,7 +327,7 @@ const year = new Date().getFullYear()
               </div>
 
               <!-- Share -->
-              <div class="card w-full bg-base-100 border border-base-300 shadow mt-0 animate-fade-up" style="--delay:200ms" :class="{ 'min-h-[120px]': isLtLg }">
+              <div class="card w-full bg-base-100 border border-base-300 shadow mt-0 animate-fade-up" style="--delay:240ms" :class="{ 'min-h-[120px]': isLtLg }">
                 <div class="card-body p-2 sm:p-6">
                   <button
                     v-if="allCompleted && showLinkHolder !== true"
@@ -289,6 +339,7 @@ const year = new Date().getFullYear()
                     Form unlocked
                   </button>
 
+                  <!-- Styled, scrollable link -->
                   <div
                     v-else-if="showLinkHolder === true"
                     class="w-full flex items-center justify-center rounded-btn bg-base-300 text-base-content font-semibold text-sm px-3 py-2 overflow-x-auto"
@@ -318,7 +369,7 @@ const year = new Date().getFullYear()
       </main>
 
       <!-- Explanation -->
-      <section class="w-full min-h-screen bg-primary text-base-300 flex flex-col animate-fade-up" style="--delay:260ms">
+      <section class="w-full min-h-screen bg-primary text-base-300 flex flex-col animate-fade-up" style="--delay:300ms">
         <div class="flex-1 max-w-6xl mx-auto py-12 sm:py-16 prose prose-invert px-3 sm:px-6">
           <h2 class="text-3xl font-semibold mb-6">What Are <strong>Dark Patterns</strong>?</h2>
           <p class="text-lg text-base-100">
@@ -373,7 +424,7 @@ const year = new Date().getFullYear()
           </p>
         </div>
 
-        <footer class="w-full bg-primary/90 backdrop-blur-sm border-t border-base-300/40 animate-fade-up" style="--delay:320ms">
+        <footer class="w-full bg-primary/90 backdrop-blur-sm border-t border-base-300/40 animate-fade-up" style="--delay:360ms">
           <div class="max-w-6xl mx-auto px-6 py-4 text-xs sm:text-sm flex flex-col sm:flex-row gap-2 sm:items-center justify-between">
             <span>&copy; {{ year }} Dark Patterns IO – Educational Use</span>
             <span class="opacity-80">Built for research & awareness. No commercial intent.</span>
@@ -381,21 +432,56 @@ const year = new Date().getFullYear()
         </footer>
       </section>
 
-      <!-- Active tutorial modal (also listen for optional @complete) -->
+      <!-- Active tutorial modal -->
       <component
-      :is="tutorialComponents[pattern.component]"
-      v-for="pattern in activePattern"
-      :id="pattern.id"
-      :key="pattern.id"
-      :open="true"
-      :on-complete="() => completePattern(pattern.id)"   
-      @complete="() => completePattern(pattern.id)"      
-      @close="closeModal"
-    />
+        :is="tutorialComponents[pattern.component]"
+        v-for="pattern in activePattern"
+        :id="pattern.id" :key="pattern.id"
+        :open="true" :on-complete="() => completePattern(pattern.id)"
+        @close="closeModal"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* keep your existing styles */
+/* Entrance animations
+   - Triggered only when root gets .entered class after mount (SSR-safe).
+   - Slightly longer durations for better presence. */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-14px) scale(1); }
+  to   { opacity: 1; transform: translateY(0)      scale(1); }
+}
+.entered .animate-fade-up {
+  animation: fadeUp .72s cubic-bezier(.25,.8,.25,1) both;
+  animation-delay: var(--delay, 0ms);
+}
+.entered .animate-fade-down {
+  animation: fadeDown .66s cubic-bezier(.25,.8,.25,1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Bubble transition (kept) */
+.bubble-enter-active { transition: opacity .18s ease, transform .18s ease; }
+.bubble-enter-from { opacity: 0; transform: translateY(4px) scale(.98); }
+.bubble-move { transition: transform .18s ease; }
+
+/* Typing dots — reliable, visible long enough */
+.typing-dots { display: inline-flex; gap: 6px; align-items: center; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 9999px; background: currentColor; opacity: .35; animation: typing-blink 1.05s infinite ease-in-out; }
+.typing-dots span:nth-child(2){ animation-delay: .15s; }
+.typing-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes typing-blink { 0%,80%,100%{opacity:.25; transform:translateY(0)} 40%{opacity:.95; transform:translateY(-1px)} }
+
+/* Other small polish */
+.progress-track { width: 100%; height: 6px; border-radius: 9999px; background: linear-gradient(to right, oklch(var(--b3)) 0%, oklch(var(--b3)) 100%); overflow: hidden; }
+.progress-fill { height: 100%; width: 0%; background: oklch(var(--p)); transition: width .35s cubic-bezier(.25,.8,.25,1); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity .35s, transform .35s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: scale(.98); }
+.fade-enter-to, .fade-leave-from { opacity: 1; transform: scale(1); }
 </style>
