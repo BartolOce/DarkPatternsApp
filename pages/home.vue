@@ -423,10 +423,10 @@ const year = new Date().getFullYear()
       <component
         :is="tutorialComponents[pattern.component]"
         v-for="pattern in activePattern"
-        :id="pattern.id" :key="pattern.id"
+        :id="pattern.id"
+        :key="pattern.id"
         :open="true"
-        :on-complete="() => completePattern(pattern.id)"
-        @complete="() => completePattern(pattern.id)"
+        @complete="completePattern(pattern.id)"          
         @close="closeModal"
       />
     </div>

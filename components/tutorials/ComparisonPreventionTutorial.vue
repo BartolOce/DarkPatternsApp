@@ -108,10 +108,9 @@ const LOCAL_KEY = 'comparison_prevention_tutorial_complete'
 
 const props = defineProps({
   open: { type: Boolean, required: true },
-  onComplete: { type: Function, default: () => {} },
   id: { type: [String, Number], default: null }
 })
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'complete'])
 const dialogRef = ref(null)
 
 const plans = [
@@ -161,21 +160,16 @@ function handlePrev() {
 
 function checkCompletion() {
   if (reachedEnd.value && returnedToStart.value && !tutorialComplete.value) {
-    tutorialComplete.value = true
-    localStorage.setItem(LOCAL_KEY, '1')
-
-    // 🔓 Immediately notify the parent that this tutorial is complete
-    if (typeof props.onComplete === 'function') {
-      props.onComplete()
-    }
+  tutorialComplete.value = true
+  localStorage.setItem(LOCAL_KEY, '1')
+  emit('complete')               // ← fire completion event
   }
 }
 
 function handleClose() {
-  // Always notify parent the modal closed; only mark complete if tutorialComplete
   emit('close')
-  if (tutorialComplete.value && typeof props.onComplete === 'function') {
-    props.onComplete()
+  if (tutorialComplete.value) {
+    emit('complete')               // ← ensure completion is captured if they close after finishing
   }
 }
 
