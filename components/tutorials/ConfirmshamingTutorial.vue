@@ -6,7 +6,7 @@
     @close="onDialogNativeClose"
   >
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[70vh] max-h-[70vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top -->
@@ -53,7 +53,7 @@
               <div
                 v-else-if="view === 'step-1'"
                 key="s1"
-                class="card confirm-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 p-5 md:p-6 mb-6 focus-within:ring-2 focus-within:ring-primary/30"
+                class="card confirm-card bg-gradient-to-br from-base-100 to-base-200/60 border border-base-300/60 shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 p-5 md:p-6 focus-within:ring-2 focus-within:ring-primary/30"
               >
                 <div class="card-body items-center text-center gap-3 md:gap-4">
                   <h3 class="card-title text-lg md:text-xl mb-1.5">🎁 Get 10% Off Your First Purchase!</h3>
@@ -223,9 +223,9 @@ const footerIcon = computed(() => {
   return '🎯'
 })
 const footerText = computed(() => {
-  if (tutorialComplete.value) return 'Completed'
-  if (view.value === 'step-2') return 'Almost done…'
-  return 'Go through all the steps'
+  if (tutorialComplete.value) return 'By mocking the “no” choice, the UI uses guilt to steer decisions, undermining free choice.'
+  if (view.value === 'step-2') return 'Did they really have to point out you’ll pay more? Nevertheless, let’s choose not to subscribe to the newsletter.'
+  return 'Let’s avoid extra emails — pick option 2.'
 })
 
 /** close handling */

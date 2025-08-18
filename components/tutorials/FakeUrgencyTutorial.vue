@@ -7,7 +7,7 @@
     @close="onDialogNativeClose"
   >
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[70vh] max-h-[70vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top section -->
@@ -159,9 +159,9 @@ const footerIcon = computed(() => {
   return '🎯'
 })
 const footerText = computed(() => {
-  if (stage.value >= 2) return 'Completed'
-  if (stage.value >= 1) return 'Almost done…'
-  return 'Go through two sale cycles'
+  if (stage.value >= 2) return 'The artificial timer rushed you, but real sales rarely end – they just restart.'
+  if (stage.value >= 1) return 'Another sale? Looks like it’s my lucky day. Let’s buy something before it ends.'
+  return 'Let’s see what happens when the sale ends — there are some pretty good deals.'
 })
 const footerClass = computed(() => {
   if (stage.value >= 2) return 'text-success font-semibold'

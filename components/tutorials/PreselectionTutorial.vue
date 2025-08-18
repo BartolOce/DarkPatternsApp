@@ -2,7 +2,7 @@
 <template>
   <dialog ref="dialogRef" class="modal" @cancel="onDialogCancel" @close="onDialogNativeClose">
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[70vh] max-h-[70vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top (pinned) -->
@@ -132,9 +132,9 @@ const tutorialComplete = ref(false)
 const stage = ref(0)
 const footerIcon = computed(() => (stage.value >= 2 ? '✅' : stage.value >= 1 ? '⏳' : '🎯'))
 const footerText = computed(() =>
-  stage.value >= 2 ? 'Tutorial completed!' :
-  stage.value >= 1 ? 'Almost done…' :
-  'Turn off both optional categories'
+  stage.value >= 2 ? 'Nice — but when you’re in a hurry, it’s easy to miss this dropdown and end up with something you didn’t want.' :
+  stage.value >= 1 ? 'Let’s be careful — after disabling additional options, pick the correct button.' :
+  'What if we don’t want additional cookies? Let’s disable them.'
 )
 const footerClass = computed(() =>
   stage.value >= 2 ? 'text-success font-semibold' :

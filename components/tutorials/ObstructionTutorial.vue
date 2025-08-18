@@ -2,7 +2,7 @@
 <template>
   <dialog ref="dialogRef" class="modal" @cancel="onDialogCancel" @close="onDialogNativeClose">
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[70vh] max-h-[70vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top -->
@@ -185,9 +185,9 @@ const stage = ref(0)
 
 const footerIcon = computed(() => (stage.value >= 2 ? '✅' : stage.value >= 1 ? '⏳' : '🎯'))
 const footerText = computed(() =>
-  stage.value >= 2 ? 'Tutorial completed!' :
-  stage.value >= 1 ? 'Almost done…' :
-  'Navigate to Subscriptions and cancel'
+  stage.value >= 2 ? 'By adding friction, the design makes cancellation not an easy task, nudging users to keep paying.' :
+  stage.value >= 1 ? 'I hope there aren’t more submenus to reach Cancel subscription — let’s keep going.' :
+  'Try to navigate trough Subscriptions and cancel the paid plan'
 )
 const footerClass = computed(() =>
   stage.value >= 2 ? 'text-success font-semibold' :

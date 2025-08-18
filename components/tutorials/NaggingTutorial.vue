@@ -7,7 +7,7 @@
     @close="onDialogNativeClose"
   >
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[70vh] max-h-[70vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top -->
@@ -127,9 +127,9 @@ const footerIcon = computed(() => {
   return '🎯'
 })
 const footerText = computed(() => {
-  if (stage.value >= 2) return 'Tutorial completed!'
-  if (stage.value >= 1) return 'Almost done…'
-  return 'Dismiss the popup twice'
+  if (stage.value >= 2) return 'It looks like we just need to enable them — nagging normalizes “yes” and makes “no” a chore.'
+  if (stage.value >= 1) return 'Again? They really want you to turn them on—let’s pass for now.'
+  return 'Oh great, another thing that’ll make your phone ring — let’s just dismiss it.'
 })
 const footerClass = computed(() => {
   if (stage.value >= 2) return 'text-success font-semibold'

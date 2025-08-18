@@ -6,7 +6,7 @@
     @close="onDialogNativeClose"
   >
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[70vh] max-h-[70vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top section -->
@@ -209,9 +209,9 @@ const footerIcon = computed(() => {
   return '🎯'
 })
 const footerText = computed(() => {
-  if (tutorialComplete.value) return 'Completed'
-  if (step.value === 2) return 'Almost done…'
-  return 'Go through both views'
+  if (tutorialComplete.value) return 'Pretending items are “nearly gone” injects urgency, steering users to rush decisions and reduce informed choice.'
+  if (step.value === 2) return 'Some sites allow fake low-stock labels - let’s enable Real stock and return to check how it should look.'
+  return 'Let’s look at a sample webshop inventory interface — click the button to switch views.'
 })
 
 // Close helpers (X/ESC/backdrop)

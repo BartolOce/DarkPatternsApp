@@ -6,7 +6,7 @@
     @close="onDialogNativeClose"
   >
     <div
-      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[60vh] max-h-[60vh] flex flex-col"
+      class="modal-box rounded-xl p-0 mt-10 bg-base-200 shadow-none overflow-hidden max-w-[40vw] min-w-[48rem] h-[65vh] max-h-[65vh] flex flex-col"
       :class="{ 'animate-in': open }"
     >
       <!-- Top -->
@@ -223,12 +223,12 @@ const transitionClasses = computed(() => {
 /** Footer message + style (no slash opacity classes) */
 const footerText = computed(() => {
   if (tutorialComplete.value) {
-    return 'Completed: you went from the first plan to the last and back to the start.'
+    return 'Plans are shown one at a time, making side-by-side checks hard and lowering the chance users notice better value.'
   }
   if (reachedEnd.value && !returnedToStart.value) {
-    return 'Almost there — now go back to the first plan to finish.'
+    return 'Did the first plan include tax? Let’s go back and take a look.'
   }
-  return 'Goal: go through all the plans from beginning to end, then return to the start.'
+  return 'Let’s compare data plan prices — jump to the end to see what suits you best.'
 })
 const footerClass = computed(() => {
   if (tutorialComplete.value) return 'text-success font-medium'
