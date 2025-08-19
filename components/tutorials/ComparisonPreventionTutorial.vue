@@ -191,8 +191,6 @@ function handlePrev() {
 function checkCompletion() {
   if (reachedEnd.value && returnedToStart.value && !tutorialComplete.value) {
     tutorialComplete.value = true
-    // If you ever want to keep a record, uncomment this:
-    // try { localStorage.setItem(LOCAL_KEY, '1') } catch {}
     emit('complete', props.id || 'comparisonprevention')
     if (typeof props.onComplete === 'function') props.onComplete()
   }
@@ -237,7 +235,7 @@ const footerClass = computed(() => {
 })
 const footerIcon = computed(() => {
   if (tutorialComplete.value) return '✅'
-  if (reachedEnd.value && !returnedToStart.value) return '↩️'
+  if (reachedEnd.value && !returnedToStart.value) return '⏳'
   return '🎯'
 })
 </script>

@@ -26,24 +26,84 @@ const tutorialComponents: Record<TutorialComponentKey, Component> = {
   HiddenCostsTutorial, NaggingTutorial, ObstructionTutorial, PreselectionTutorial, TrickWordingTutorial, VisualInterfaceTutorial,
 }
 
+/** Pattern list + short helper/user messages used in chat */
 const patterns: Array<{ id:string; label:string; component:TutorialComponentKey; message:string; action:string }> = [
-  { id:'comparisonprevention', label:'Comparison prevention', component:'ComparisonPreventionTutorial', message:'The carousel made comparing plans hard – especially since plan UltraStream hid taxes. Always check per-unit costs and fine print to avoid false discounts.', action:'Opened the first one, let’s go.' },
-  { id:'confirmshaming', label:'Confirmshaming', component:'ConfirmshamingTutorial', message:'Here, declining a newsletter shows "OK, I’ll pay more" – framing "no" as foolish. Remember: ethical design never punishes refusal!', action:'Alright, #2 is checked off.' },
-  { id:'fakescarcity', label:'Fake scarcity', component:'FakeScarcityTutorial', message:'Notice how "Only 2 left!" triggered urgency despite ample stock? This exact tactic is used daily on shopping sites – always verify stock claims to avoid false pressure.', action:'Just had a look at example three.' },
-  { id:'fakeurgency', label:'Fake urgency', component:'FakeUrgencyTutorial', message:'The artificial timer rushed you, but real sales rarely end – they just restart. This endless "urgency" cycle is standard on retail sites.', action:'Fourth one done and dusted.' },
-  { id:'hiddencosts', label:'Hidden costs', component:'HiddenCostsTutorial', message:'Notice the "service fees" added at checkout? This bait-and-switch tactic is standard on ticketing sites – always check the final total before paying.', action:'#5 is out of the way.' },
-  { id:'nagging', label:'Nagging', component:'NaggingTutorial', message:'Notice how the popup reappeared after declining? Real nagging systems loop until you choose what they wanted – this denies genuine choice.', action:'I went through the sixth example.' },
-  { id:'obstruction', label:'Obstruction', component:'ObstructionTutorial', message:'Notice how many steps it took? This isn’t poor design – it’s deliberate obstruction. Real sites bury cancellation to retain users', action:'Number seven opened, moving on.' },
-  { id:'preselection', label:'Preselection', component:'PreselectionTutorial', message:'All options were pre-checked – forcing you to manually uncheck extras. Sites do this to trick users into accidental consent.', action:'Example eight is wrapped up.' },
-  { id:'trickwording', label:'Trick wording', component:'TrickWordingTutorial', message:'The double-negative might have tricked you. Real sites use this language maze to retain users – always pause and reread options.', action:'Took care of #9.' },
-  { id:'visualinterface', label:'Visual interface', component:'VisualInterfaceTutorial', message:'You’ve just learned how to spot dark patterns and how to stay safer online by recognizing tricks that websites often use. Before you go, we’d love your help. A new button has been unlocked below — filling out the short form will support our research and make this project even better. Your experience matters, and together we can help make the web a fairer place.', action:'All ten finished — that’s the lot.' },
+  {
+    id: 'comparisonprevention',
+    label: 'Comparison prevention',
+    component: 'ComparisonPreventionTutorial',
+    message: 'Some sites make it hard to compare products. For example, hiding features or burying prices so you can’t easily see what’s better or cheaper. It’s like shopping blindfolded. Let’s keep it going—open the next example.',
+    action: 'Oooh, what’s this one about?'
+  },
+  {
+    id: 'confirmshaming',
+    label: 'Confirmshaming',
+    component: 'ConfirmshamingTutorial',
+    message: 'Yep. Confirmshaming makes the “No” option sound guilty, like “No, I don’t want to save money.” It pushes you to feel bad for saying no. Nice pace—on to the next one.',
+    action: 'Wait, did they just insult me?'
+  },
+  {
+    id: 'fakescarcity',
+    label: 'Fake scarcity',
+    component: 'FakeScarcityTutorial',
+    message: 'Not always. Fake scarcity shows a fake “low stock” warning to pressure you into buying fast—even when plenty is available. Keep the momentum—let’s see what’s next.',
+    action: 'Uh oh, only 2 left in stock?! Panic time?'
+  },
+  {
+    id: 'fakeurgency',
+    label: 'Fake urgency',
+    component: 'FakeUrgencyTutorial',
+    message: 'Relax 😎. Fake urgency uses countdowns or “deal ending soon” popups to stress you, even when the sale isn’t really ending. You’re doing great—next example.',
+    action: 'OMG, timer is ticking down, I gotta click!'
+  },
+  {
+    id: 'hiddencosts',
+    label: 'Hidden costs',
+    component: 'HiddenCostsTutorial',
+    message: 'That’s hidden costs—extra fees, shipping, or random add-ons that only appear at the last step of checkout. Let’s keep it rolling—check the next step.',
+    action: 'Why is my cart suddenly more expensive?!'
+  },
+  {
+    id: 'nagging',
+    label: 'Nagging',
+    component: 'NaggingTutorial',
+    message: 'Exactly. Nagging repeats the same request—like “Download our app” or “Turn on notifications”—over and over until you give in. Great progress—onto the next one.',
+    action: 'This popup AGAIN?! Didn’t I close it?'
+  },
+  {
+    id: 'obstruction',
+    label: 'Obstruction',
+    component: 'ObstructionTutorial',
+    message: 'That’s obstruction. Making the easy choice hard (like cancelling or unsubscribing) while the company’s preferred choice is quick and simple. Nice work—let’s keep going.',
+    action: 'Why does it take 3 clicks to cancel but 1 click to subscribe?'
+  },
+  {
+    id: 'preselection',
+    label: 'Preselection',
+    component: 'PreselectionTutorial',
+    message: 'Preselection is when boxes are already ticked for you—here it’s additional cookies (like “marketing” or “personalization”) turned on by default. Unless you manually uncheck them, you accept more tracking than you intended. Steady pace—see what’s next.',
+    action: 'Huh, why are the additional cookies already checked?'
+  },
+  {
+    id: 'trickwording',
+    label: 'Trick wording',
+    component: 'TrickWordingTutorial',
+    message: 'Trick wording uses double negatives or confusing phrases so you’re not sure what you’re agreeing to. Classic brain twister. Nearly there—next example.',
+    action: 'Uncheck this box if I don’t want to… wait, what?'
+  },
+  {
+    id: 'visualinterface',
+    label: 'Visual interface',
+    component: 'VisualInterfaceTutorial',
+    message: 'That’s visual manipulation. Using colors, size, or layout to make the company’s option super obvious while hiding yours. That’s the last example—nice finish!',
+    action: 'Why’s the “Yes, keep sharing” button shiny and huge, but the No option tiny and grey?'
+  },
 ]
 
 /* Progress & modal */
 const completed = ref<boolean[]>(Array(patterns.length).fill(false))
 const activeModal = ref<string|null>(null)
 const afterCloseMessages = ref<{side:'start'|'end',text:string}[]>([])
-const openedPatterns = ref<Set<string>>(new Set())
 const completionAnnounced = ref<Set<string>>(new Set())
 
 /* Share link reveal */
@@ -99,63 +159,100 @@ async function processQueue(){
   isTyping.value=false
   if(messageQueue.length) setTimeout(processQueue, betweenBubbleDelayMs)
 }
-function enqueueMessage(side:'start'|'end', text:string){
-  const m = reactive<Msg>({ id: msgSeq++, side, text, typed:'' }); messageQueue.push(m); processQueue()
-}
 function enqueueTypingThenMessage(side:'start'|'end', text:string, typingMs=800){
   const m = reactive<Msg>({ id: msgSeq++, side, typingIndicator:true, duration:typingMs, pendingText:text, typed:'' })
   messageQueue.push(m); processQueue()
 }
-function pushGuide(t:string){ enqueueMessage('start', t) }
 
-/* Helper copy */
-function explainFor(id:string){
-  const map:Record<string,string>={
-    comparisonprevention:'The carousel made comparing plans hard – especially since Plan C hid taxes. Always check per-unit costs and fine print to avoid false discounts.',
-    confirmshaming:'Confirmshaming guilts users into choices by shaming refusal. See what would happen if you didn’t want to give your email — notice how they present that choice. Try it out, then we’ll move to the next.',
-    fakescarcity:'The next one is Fake Scarcity. This pressures quick decisions by implying limited stock. Here, you’ll toggle between real inventory and manipulated low-stock displays.',
-    fakeurgency:'Pattern #4 is Fake Urgency. This pressures quick decisions with false time limits. Below, a countdown claims "Sale ends soon!" – use the "End Sale" button to skip waiting. Test this tactic, then we’ll proceed.',
-    hiddencosts:'Hidden Costs is next on the list. Sites add unexpected fees late in checkout. Below, try buying concert tickets but be ready for a surprise. Complete the process, then we’ll continue.',
-    nagging:'Nagging is dark pattern that overwhelm you with repeated permission requests. Below, you’ll face a popup asking for notifications – interact with it to experience the persistence.',
-    obstruction:'At #7 we have Obstruction. This intentionally complicates simple tasks like canceling subscriptions. Below, hunt for the cancellation option hidden among these cards – try stopping your "service".',
-    preselection:'Preselection is dark pattern where sites set default choices against your interests. Below, try selecting only "Necessary Cookies" – notice how options are pre-checked against you. Test the buttons, then proceed.',
-    trickwording:'Pattern #9: Trick Wording. This uses confusing language to mislead decisions. Below, try unsubscribing from the newsletter – pay close attention to the checkbox wording.',
-    visualinterface:'For the last one we have Visual Interface Interference. Sites use size and color to steer your choices. Below, a large colored button pushes their goal while your true option is small and neutral. Test both buttons to feel the influence.'
-  }
-  return map[id] || 'Short guidance for this step.'
-}
-
-/* Initial lock + intro */
+/* Intro */
 const initialDelayDone = ref(false)
-const introLines = [
-  'Hi there! Welcome to Dark Patterns Exposed – your friendly guide to sneaky design tricks online. I’m here to help you spot them like a pro! Ready to dive in?',
-  'Here’s how it works: I’ll send short chat bubbles (like this!). You’ll explore real interactive examples. Learn to protect yourself in under 5 mins!',
-  'Let’s start! Click "Comparison prevention" on the list to uncover your first dark pattern. Trust me – you’ll spot these everywhere after today!',
-  'This dark pattern hides options to manipulate choice. Here, a carousel shows one data plan at a time to make side-by-side comparison difficult.'
+const finishBtnDisabled = ref(true) // disable Finish button briefly so intro animates
+
+// Helper-first intro pairs (light, descriptive)
+const introPairs: Array<{ helper: string; me: string }> = [
+  {
+    helper:
+      'Welcome! This site is a short, hands-on tour of DARK PATTERNS—design tricks that can steer choices without you noticing. We’ll explain the idea in plain language while you try small interactive examples.',
+    me: 'Sounds good. What do I start with?'
+  },
+  {
+    helper:
+      'On the left side you’ll see the STEPS of the guide. Finish one and the next unlocks, so you learn one idea at a time without clutter.',
+    me: 'Got it—go through them in order.'
+  },
+  {
+    helper:
+      'Each example is a simplified interface inspired by real sites. If you think back to your own browsing, you’ve probably seen something similar.',
+    me: 'Yeah, that already feels familiar.'
+  },
+  {
+    helper:
+      'Under every example you’ll find small TIPS that tell you what to try so you can complete the step. Read the tip, interact a bit, then close the window to continue.',
+    me: 'Easy enough. I’ll follow the tips.'
+  },
+  {
+    helper:
+      'Chats stay brief and you can go at your own pace—stop any time. When you’re ready, open the first step: Comparison Prevention.',
+    me: 'Alright, opening the first step now.'
+  },
+  {
+    helper:
+      'Nice. When you finish, click the next item on the left—let’s see what’s next and keep the momentum.',
+    me: 'On it.'
+  }
 ]
 
+// Final wrap-up sequence to append as the last messages
+const wrapupSequence: Array<{side:'start'|'end'; text:string}> = [
+  {
+    side: 'start',
+    text: 'Thanks for completing the tour! With this knowledge you can spot dark patterns, slow down when things feel pushy, compare clearly, and find opt-outs—so you stay in control when buying, subscribing, or handling cookies.'
+  },
+  {
+    side: 'end',
+    text: 'Nice—this was helpful. I’ll watch for these from now on.'
+  },
+  {
+    side: 'start',
+    text: 'If you have a minute, the short optional form below helps us improve the guide. If not, no worries—the button stays unlocked and you’re all set.'
+  }
+]
+const appendedFinalChat = ref(false)
+
 onMounted(async ()=>{
-  await wait(2000)              // 2s gate before step 1 can be opened
+  await wait(2000) // 2s gate before step 1 can be opened
   initialDelayDone.value = true
-  enqueueTypingThenMessage('start', introLines[0], 900)
-  enqueueTypingThenMessage('start', introLines[1], 900)
-  enqueueTypingThenMessage('start', introLines[2], 900)
-  pushGuide(introLines[3])
+
+  // Helper-first intro
+  introPairs.forEach((p) => {
+    enqueueTypingThenMessage('start', p.helper, 900) // Helper
+    enqueueTypingThenMessage('end',   p.me,     500) // Me
+  })
+
+  // Re-enable the Finish button shortly after intro begins animating
+  setTimeout(() => { finishBtnDisabled.value = false }, 1000)
 })
 
-/* Build full transcript (used after Finish Now) */
+/* Build full transcript (used after Finish Now) — includes wrap-up at the end */
 function buildFinishedTranscript(): Msg[] {
   const out: Msg[] = []
   let idCounter = 0
-  for (const line of introLines) out.push({ id: idCounter++, side: 'start', text: line, typed: line })
-  patterns.forEach((p, i) => {
+
+  // Intro as Helper → Me
+  for (const p of introPairs) {
+    out.push({ id: idCounter++, side: 'start', text: p.helper, typed: p.helper })
+    out.push({ id: idCounter++, side: 'end',   text: p.me,     typed: p.me })
+  }
+
+  // Each completed pattern: Me action → Helper message
+  patterns.forEach((p) => {
     out.push({ id: idCounter++, side: 'end',   text: p.action,  typed: p.action })
     out.push({ id: idCounter++, side: 'start', text: p.message, typed: p.message })
-    const next = patterns[i+1]; if (next) {
-      const guide = explainFor(next.id)
-      out.push({ id: idCounter++, side: 'start', text: guide, typed: guide })
-    }
   })
+
+  // Final wrap-up (always last)
+  wrapupSequence.forEach(s => out.push({ id: idCounter++, side: s.side, text: s.text, typed: s.text }))
+
   return out
 }
 
@@ -181,7 +278,7 @@ function finishNowConfirmed() {
   isTyping.value = false
   messageQueue.length = 0
 
-  // print full transcript without typing
+  // print full transcript without typing (now includes wrap-up)
   chatMessages.value = buildFinishedTranscript()
 
   // reveal link
@@ -193,28 +290,36 @@ function openModal(id:string){
   const idx = patterns.findIndex(p=>p.id===id)
   if(!canOpen(idx)) return
 
-  // if finished by button, allow opening but don't enqueue any chat
-  if(!finishedByButton.value && !openedPatterns.value.has(id)){
-    afterCloseMessages.value = [{ side:'end', text:patterns[idx].action }]
-    openedPatterns.value.add(id)
-  }
-
+  // Do NOT enqueue user action on open; only after complete + close.
   activeModal.value = null
   setTimeout(()=>{ activeModal.value = id }, 0)
 }
 function closeModal(){ activeModal.value = null }
+
+/* Called by modal when a pattern is completed */
 function completePattern(id:string){
-  if (finishedByButton.value) return // no more chat after finish
+  if (finishedByButton.value) return
   const idx = patterns.findIndex(p=>p.id===id)
-  if(completionAnnounced.value.has(id)) return
-  if(!completed.value[idx]) completed.value[idx] = true
-  const msgs=[...afterCloseMessages.value]
-  msgs.push({ side:'start', text:patterns[idx].message })
-  const next = patterns[idx+1]; if(next) msgs.push({ side:'start', text:explainFor(next.id) })
-  afterCloseMessages.value = msgs; completionAnnounced.value.add(id)
+  if (completionAnnounced.value.has(id)) return
+
+  // Mark completed
+  if (!completed.value[idx]) completed.value[idx] = true
+
+  // Queue messages to appear ONLY after modal is closed:
+  // 1) user's playful "action" line (chat-end)
+  // 2) helper's explanation for the finished step (chat-start)
+  const msgs: {side:'start'|'end',text:string}[] = []
+  msgs.push({ side:'end',   text: patterns[idx].action })
+  msgs.push({ side:'start', text: patterns[idx].message })
+
+  // accumulate; flush happens when modal actually closes (see watchers)
+  afterCloseMessages.value = afterCloseMessages.value.concat(msgs)
+  completionAnnounced.value.add(id)
 }
+
+/* After-close flusher: only emits messages when no modal is open */
 function flushAfterCloseIfReady(){
-  if (finishedByButton.value) return // suppress enqueues after finish
+  if (finishedByButton.value) return
   if(!activeModal.value && afterCloseMessages.value.length){
     const toFlush = afterCloseMessages.value.slice()
     afterCloseMessages.value = []
@@ -224,9 +329,25 @@ function flushAfterCloseIfReady(){
 watch(activeModal, flushAfterCloseIfReady)
 watch(afterCloseMessages, flushAfterCloseIfReady)
 
+/* When ALL steps are completed normally, append the final wrap-up once the last modal is closed */
+const allCompleted = computed(()=> completed.value.length>0 && completed.value.every(Boolean))
+watch([allCompleted, activeModal], ()=>{
+  if (finishedByButton.value) return
+  if (allCompleted.value && !activeModal.value && !appendedFinalChat.value) {
+    appendedFinalChat.value = true
+    // enqueue final wrap-up messages with typing
+    nextTick(()=>{
+      wrapupSequence.forEach((m, idx) => {
+        enqueueTypingThenMessage(m.side, m.text, idx === 0 ? 900 : 700)
+      })
+    })
+    // also unlock the form when all steps are done
+    if (!showLinkHolder.value) unlockLinkHolder()
+  }
+})
+
 /* Progress helpers */
 const completedCount = computed(()=> completed.value.filter(Boolean).length)
-const allCompleted = computed(()=> completed.value.length>0 && completed.value.every(Boolean))
 function canOpen(index:number){
   if(finishedByButton.value) return true
   if(index===0) return initialDelayDone.value
@@ -314,7 +435,8 @@ const year = new Date().getFullYear()
             <button
               v-else
               class="btn btn-primary gap-2"
-              title="Finish tutorial and unlock the form"
+              :disabled="finishBtnDisabled"
+              :title="finishBtnDisabled ? 'Starting…' : 'Finish tutorial and unlock the form'"
               @click="finishNow"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -362,12 +484,37 @@ const year = new Date().getFullYear()
             <!-- Chat + Share -->
             <div class="flex flex-col flex-1 lg:col-span-2 h-full min-h-0 gap-4" :class="{ 'min-h-[340px]': isLtLg }">
               <!-- Chat -->
-              <div class="card w-full bg-base-100 border border-base-300 shadow flex-1 min-h-0 flex flex-col overflow-hidden max-h-[60vh] lg:min-h-0 lg:max-h-none animate-fade-up" style="--delay:140ms" :class="{ 'min-h-[340px]': isLtLg }">
-                <div ref="chatBoxRef" class="flex-1 basis-0 w-full overflow-y-auto overflow-x-hidden p-2 sm:p-4 space-y-3 overscroll-contain [scrollbar-gutter:stable] text-base">
+              <div
+                class="card w-full bg-base-100 border border-base-300 shadow flex-1 min-h-0 flex flex-col overflow-hidden max-h-[60vh] lg:min-h-0 lg:max-h-none animate-fade-up"
+                style="--delay:140ms"
+                :class="{ 'min-h-[340px]': isLtLg }"
+              >
+                <div
+                  ref="chatBoxRef"
+                  class="flex-1 basis-0 w-full overflow-y-auto overflow-x-hidden p-2 sm:p-4 space-y-3 overscroll-contain [scrollbar-gutter:stable] text-base"
+                >
                   <TransitionGroup name="bubble" tag="div" class="space-y-3">
-                    <div v-for="m in chatMessages" :key="m.id" class="chat" :class="m.side === 'start' ? 'chat-start' : 'chat-end'">
-                      <div :class="['chat-bubble mx-2', m.side === 'end' ? 'bg-primary text-primary-content' : '']">
-                        <div v-if="m.typingIndicator" class="typing-dots"><span /><span /><span /></div>
+                    <div
+                      v-for="m in chatMessages"
+                      :key="m.id"
+                      class="chat"
+                      :class="m.side === 'start' ? 'chat-start' : 'chat-end'"
+                    >
+                      <!-- Chat header -->
+                      <div class="chat-header text-xs opacity-70 mb-1">
+                        {{ m.side === 'start' ? 'Helper' : 'Me' }}
+                      </div>
+
+                      <!-- Chat bubble -->
+                      <div
+                        :class="[
+                          'chat-bubble mx-2',
+                          m.side === 'end' ? 'bg-primary text-primary-content' : ''
+                        ]"
+                      >
+                        <div v-if="m.typingIndicator" class="typing-dots">
+                          <span /><span /><span />
+                        </div>
                         <template v-else>
                           <span v-if="m.typed && m.typed.length">{{ m.typed }}</span>
                           <span v-else class="opacity-60 select-none">...</span>
@@ -379,7 +526,11 @@ const year = new Date().getFullYear()
               </div>
 
               <!-- Share -->
-              <div class="card w-full bg-base-100 border border-base-300 shadow mt-0 animate-fade-up" style="--delay:200ms" :class="{ 'min-h-[120px]': isLtLg }">
+              <div
+                class="card w-full bg-base-100 border border-base-300 shadow mt-0 animate-fade-up"
+                style="--delay:200ms"
+                :class="{ 'min-h-[120px]': isLtLg }"
+              >
                 <div class="card-body p-2 sm:p-6">
                   <button
                     v-if="allCompleted && showLinkHolder !== true"

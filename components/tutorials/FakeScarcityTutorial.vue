@@ -109,7 +109,7 @@
                     </label>
                   </div>
 
-                  <!-- Fake stock input (left-aligned inline) -->
+                  <!-- Fake stock input -->
                   <div class="mt-4">
                     <div class="form-control w-full">
                       <label class="label py-1 justify-start gap-2">
@@ -129,7 +129,7 @@
             </div>
           </transition>
 
-          <!-- Toggle button (next/prev) -->
+          <!-- Toggle button -->
           <button
             class="btn btn-circle btn-primary transition-transform duration-200 absolute right-0 top-1/2 -translate-y-1/2 z-10"
             :class="step === 2 ? 'rotate-180' : ''"
@@ -142,7 +142,8 @@
           </button>
         </div>
       </div>
-      <!-- Bottom status (always visible; message changes with progress) -->
+
+      <!-- Bottom status -->
       <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
         <p class="flex items-center gap-2" :class="footerClass">
           <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
@@ -175,7 +176,6 @@ const stockOption = ref('fake')
 const fakeStockInput = ref(2)
 
 useOpenDialog(props, dialogRef, () => {
-  // fresh state each open
   step.value = 1
   carouselDirection.value = 'slide-left'
   tutorialComplete.value = false
@@ -185,40 +185,43 @@ useOpenDialog(props, dialogRef, () => {
 
 function toggleStep () {
   if (step.value === 1) {
-    // going to options
     carouselDirection.value = 'slide-left'
     step.value = 2
   } else {
-    // returning to product card; complete only if user chose "real"
     carouselDirection.value = 'slide-right'
     step.value = 1
     if (!tutorialComplete.value && stockOption.value === 'real') {
       tutorialComplete.value = true
       try { localStorage.setItem(LOCAL_KEY, '1') } catch { /* empty */ }
-      // notify parent immediately so the step gets colored
       emit('complete', props.id || 'fakescarcity')
       if (typeof props.onComplete === 'function') props.onComplete()
     }
   }
 }
 
-// Footer status (mirrors Comparison Prevention)
 const footerIcon = computed(() => {
   if (tutorialComplete.value) return '✅'
   if (step.value === 2) return '⏳'
   return '🎯'
 })
 const footerText = computed(() => {
-  if (tutorialComplete.value) return 'Pretending items are “nearly gone” injects urgency, steering users to rush decisions and reduce informed choice.'
-  if (step.value === 2) return 'Some sites allow fake low-stock labels - let’s enable Real stock and return to check how it should look.'
+  if (tutorialComplete.value) {
+    return 'Pretending items are “nearly gone” injects urgency, steering users to rush decisions and reduce informed choice.'
+  }
+  if (step.value === 2) {
+    return 'Some sites allow fake low-stock labels - let’s enable Real stock and return to check how it should look.'
+  }
   return 'Let’s look at a sample webshop inventory interface — click the button to switch views.'
 })
+const footerClass = computed(() => {
+  if (tutorialComplete.value) return 'text-success'
+  if (step.value === 2) return 'text-warning'
+  return ''
+})
 
-// Close helpers (X/ESC/backdrop)
 function handleClose () {
   emit('close')
   if (tutorialComplete.value && typeof props.onComplete === 'function') {
-    // in case parent listens only to onComplete prop
     props.onComplete()
   }
 }
@@ -237,7 +240,6 @@ function onDialogNativeClose () {
 </script>
 
 <style scoped>
-/* slide transitions */
 .slide-left-enter-active,
 .slide-left-leave-active,
 .slide-right-enter-active,
@@ -249,7 +251,6 @@ function onDialogNativeClose () {
 .slide-right-enter-from{ opacity: 0; transform: translateX(-100%); }
 .slide-right-leave-to  { opacity: 0; transform: translateX(100%); }
 
-/* modal open animation */
 @keyframes tutorial-modal-in {
   from { opacity:0; transform: translateY(12px) scale(.97); }
   to   { opacity:1; transform: translateY(0)   scale(1); }

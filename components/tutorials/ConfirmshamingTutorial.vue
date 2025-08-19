@@ -126,11 +126,11 @@
           </div>
         </div>
       </div>
-      <!-- Bottom status (always visible; message changes with progress) -->
+      <!-- Bottom status -->
       <div class="px-4 py-3 border-t border-base-300 bg-base-200 text-xs">
-        <p class="flex items-center gap-2" :class="footerClass">
+        <p class="flex items-center gap-2">
           <span v-if="footerIcon" aria-hidden="true">{{ footerIcon }}</span>
-          <span>{{ footerText }}</span>
+          <span :class="footerClass">{{ footerText }}</span>
         </p>
       </div>
     </div>
@@ -147,63 +147,41 @@ const props = defineProps({
   id: { type: [String, Number], default: null }
 })
 
-/** emit 'complete' so the parent can mark the step colored immediately */
 const emit = defineEmits(['close', 'complete'])
 const dialogRef = ref(null)
-
-/** state (no persistence) */
 const step = ref(1)
 const tutorialComplete = ref(false)
-
-/** loader */
 const isLoading = ref(false)
 const loaderText = ref('')
 const view = computed(() => (isLoading.value ? 'loading' : `step-${step.value}`))
-
-/** discount code */
 const discountCode = ref('')
+
 function genDiscountCode () {
   return `SAVE10-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
 }
 
-/** open dialog on mount/prop change */
 useOpenDialog(props, dialogRef, () => {
-  // reset fresh state every time dialog opens
   step.value = 1
   isLoading.value = false
   loaderText.value = ''
   tutorialComplete.value = false
 })
 
-/** interactions */
 function handleSubscribe () {
   discountCode.value = genDiscountCode()
   step.value = 3
 }
-
-function denyVoucher () {
-  step.value = 2 // shows “Almost done…”
-}
-
-function backToVoucher () {
-  step.value = 1
-}
-
+function denyVoucher () { step.value = 2 }
+function backToVoucher () { step.value = 1 }
 function confirmPayMore () {
-  // finalize tutorial on explicit “pay more”
   if (!tutorialComplete.value) {
     tutorialComplete.value = true
-    // notify parent ASAP so the step becomes colored
     emit('complete', props.id || 'confirmshaming')
     if (typeof props.onComplete === 'function') props.onComplete()
   }
   goToLoadingThen(1, 900, 'resetting view')
 }
-
-function applyCode () {
-  // not completing here, just resetting
-  goToLoadingThen(1, 900, 'resetting view')
-}
+function applyCode () { goToLoadingThen(1, 900, 'resetting view') }
 
 function goToLoadingThen (targetStep, delay = 900, message = 'Loading…') {
   loaderText.value = message
@@ -216,28 +194,34 @@ function goToLoadingThen (targetStep, delay = 900, message = 'Loading…') {
   }, delay)
 }
 
-/** footer messaging — mirrors Comparison Prevention behavior */
 const footerIcon = computed(() => {
   if (tutorialComplete.value) return '✅'
   if (view.value === 'step-2') return '⏳'
   return '🎯'
 })
 const footerText = computed(() => {
-  if (tutorialComplete.value) return 'By mocking the “no” choice, the UI uses guilt to steer decisions, undermining free choice.'
-  if (view.value === 'step-2') return 'Did they really have to point out you’ll pay more? Nevertheless, let’s choose not to subscribe to the newsletter.'
+  if (tutorialComplete.value) {
+    return 'By mocking the “no” choice, the UI uses guilt to steer decisions, undermining free choice.'
+  }
+  if (view.value === 'step-2') {
+    return 'Did they really have to point out you’ll pay more? Nevertheless, let’s choose not to subscribe to the newsletter.'
+  }
   return 'Let’s avoid extra emails — pick option 2.'
 })
+const footerClass = computed(() => {
+  if (tutorialComplete.value) return 'text-success'
+  if (view.value === 'step-2') return 'text-warning'
+  return ''
+})
 
-/** close handling */
 function handleClose () {
   emit('close')
-  // if completion happened before closing but parent missed it, ensure callback:
   if (tutorialComplete.value && typeof props.onComplete === 'function') {
     props.onComplete()
   }
 }
 function onXClick () { dialogRef.value?.close() }
-function onDialogCancel () { /* let native ESC close */ }
+function onDialogCancel () {}
 function onDialogNativeClose () { handleClose() }
 </script>
 

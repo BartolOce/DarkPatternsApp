@@ -54,9 +54,7 @@
                       Uncheck this box if you do not want to stop receiving no promotional emails.
                     </span>
                   </label>
-                  <p class="text-xs opacity-60 mt-2">
-                    Tip: The wording is intentionally confusing. What happens if you leave it checked?
-                  </p>
+                  
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-2">
                   <button class="btn btn-ghost" @click="cancelUnsubscribe">Cancel</button>
